@@ -4,10 +4,10 @@ const { getDatabase, getJwtSecret, runIfDev } = require('./utils')
 
 exports.handler = async function (event) {
   const sql = SQL`
-    INSERT INTO tokens (type)
-    VALUES (${event.type || 'push'})
+    INSERT INTO tokens (type, description)
+    VALUES (${event.type || 'push'}, ${event.description || ''})
     RETURNING id`
-  
+
   const secret = await getJwtSecret()
   const client = await getDatabase()
   const { rowCount, rows } = await client.query(sql)

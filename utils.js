@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk')
+const jwt = require('jsonwebtoken')
 const pg = require('pg')
 
 const isProduction = /^\s*production\s*$/i.test(process.env.NODE_ENV)
@@ -29,40 +30,6 @@ async function getAssetsBucket() {
   }
 }
 
-async function getCallbackConfig() {
-  if (isProduction) {
-    return {
-      ...await getSecret('cct'),
-      queueUrl: await getParameter('callback_url')
-    }
-  } else {
-    return {
-      url: process.env.CCT_URL,
-      accessGuid: process.env.CCT_ACCESS_GUID,
-      apiVersion: process.env.CCT_API_VERSION,
-      sp: process.env.CCT_SP,
-      sv: process.env.CCT_SV,
-      sig: process.env.CCT_SIG,
-      queueUrl: process.env.CALLBACK_QUEUE_URL
-    }
-  }
-}
-
-async function getCsoConfig() {
-  if (isProduction) {
-    return await getSecret('cso')
-  } else {
-    return {
-      publicKey: process.env.CSO_PUBLIC_KEY,
-      host: process.env.CSO_SFTP_HOST,
-      port: process.env.CSO_SFTP_PORT,
-      username: process.env.CSO_SFTP_USER,
-      password: process.env.CSO_SFTP_PASSWORD,
-      checkInPath: process.env.CSO_CHECK_IN_PATH
-    }
-  }
-}
-
 async function getDatabase() {
   require('pg-range').install(pg)
 
@@ -70,7 +37,7 @@ async function getDatabase() {
 
   if (isProduction) {
     const [{ username: user, password }, host, port, ssl, database] = await Promise.all([
-      getSecret('rds'),
+      getSecret('rds-read-write'),
       getParameter('db_host'),
       getParameter('db_port'),
       getParameter('db_ssl'),
@@ -110,34 +77,51 @@ async function getDatabase() {
   return client
 }
 
-async function getEncryptKey() {
-  if (isProduction) {
-    const { key } = await getSecret('encrypt')
-
-    return key
-  } else {
-    return process.env.ENCRYPT_KEY
-  }
-}
-
 async function getExposuresConfig() {
   if (isProduction) {
     const [
       { privateKey, signatureAlgorithm, verificationKeyId, verificationKeyVersion },
-      appBundleId
+      appBundleId,
+      defaultRegion,
+      nativeRegions
     ] = await Promise.all([
       getSecret('exposures'),
-      getParameter('app_bundle_id')
+      getParameter('app_bundle_id'),
+      getParameter('default_region'),
+      getParameter('native_regions')
     ])
 
-    return { appBundleId, privateKey, signatureAlgorithm, verificationKeyId, verificationKeyVersion }
+    return {
+      appBundleId,
+      defaultRegion,
+      nativeRegions: nativeRegions.split(','),
+      privateKey,
+      signatureAlgorithm,
+      verificationKeyId,
+      verificationKeyVersion
+    }
   } else {
     return {
       appBundleId: process.env.APP_BUNDLE_ID,
+      defaultRegion: process.env.EXPOSURES_DEFAULT_REGION,
+      nativeRegions: process.env.EXPOSURES_NATIVE_REGIONS.split(','),
       privateKey: process.env.EXPOSURES_PRIVATE_KEY,
       signatureAlgorithm: process.env.EXPOSURES_SIGNATURE_ALGORITHM,
       verificationKeyId: process.env.EXPOSURES_KEY_ID,
       verificationKeyVersion: process.env.EXPOSURES_KEY_VERSION
+    }
+  }
+}
+
+async function getInteropConfig() {
+  if (isProduction) {
+    return await getSecret('interop')
+  } else {
+    return {
+      maxAge: Number(process.env.INTEROP_MAX_AGE),
+      privateKey: process.env.INTEROP_PRIVATE_KEY,
+      token: process.env.INTEROP_TOKEN,
+      url: process.env.INTEROP_URL
     }
   }
 }
@@ -152,11 +136,17 @@ async function getJwtSecret() {
   }
 }
 
-async function getStatsUrl() {
-  if (isProduction) {
-    return await getParameter('arcgis_url')
-  } else {
-    return process.env.STATS_URL
+function isAuthorized(token, secret) {
+  try {
+    const data = jwt.verify(token.replace(/^Bearer /, ''), secret)
+
+    if (data.refresh || !data.id) {
+      return false
+    }
+
+    return true
+  } catch (error) {
+    return false
   }
 }
 
@@ -176,12 +166,10 @@ function runIfDev(fn) {
 
 module.exports = {
   getAssetsBucket,
-  getCallbackConfig,
-  getCsoConfig,
   getDatabase,
-  getEncryptKey,
   getExposuresConfig,
+  getInteropConfig,
   getJwtSecret,
-  getStatsUrl,
+  isAuthorized,
   runIfDev
 }

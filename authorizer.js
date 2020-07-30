@@ -1,22 +1,11 @@
-const jwt = require('jsonwebtoken')
-const { getJwtSecret, runIfDev } = require('./utils')
-
-function isAuthorized(token, secret) {
-  try {
-    const data = jwt.verify(token.replace(/^Bearer /, ''), secret)
-
-    if (data.refresh || !data.id) {
-      return false
-    }
-
-    return true
-  } catch (error) {
-    return false
-  }
-}
+const { isAuthorized, runIfDev } = require('./utils')
 
 exports.handler = async function (event) {
-  const secret = await getJwtSecret()
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    console.log('Error acquiring secret from env')
+    throw 'JWTSecretError'
+  }
 
   if (!isAuthorized(event.authorizationToken, secret)) {
     throw 'Unauthorized'
