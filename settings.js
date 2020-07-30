@@ -1,37 +1,77 @@
 const AWS = require('aws-sdk')
 const SQL = require('@nearform/sql')
+const crypto = require('crypto')
+const querystring = require('querystring')
 const { unflatten } = require('flat')
 const { getAssetsBucket, getDatabase, runIfDev } = require('./utils')
 
 async function getSettingsBody(client) {
-  const sql = SQL`SELECT settings_key, settings_value FROM settings`
+  const sql = SQL`SELECT is_language, settings_key, settings_value FROM settings`
   const { rows } = await client.query(sql)
-  const result = { generatedAt: new Date() }
 
-  for (const { settings_key, settings_value } of rows) {
-    result[settings_key] = settings_value
+  const result = {
+    exposures: {},
+    language: {}
+  }
+
+  for (const { is_language, settings_key, settings_value } of rows) {
+    result[is_language ? 'language' : 'exposures'][settings_key] = settings_value
   }
 
   return unflatten(result)
+}
+
+async function isChanged(s3, bucket, key, hash) {
+  try {
+    const { TagSet } = await s3.getObjectTagging({ Bucket: bucket, Key: key }).promise()
+
+    for (const { Key, Value } of TagSet) {
+      if (Key === 'Hash') {
+        return Value !== hash
+      }
+    }
+
+    return true
+  } catch (error) {
+    return true
+  }
+}
+
+async function updateIfChanged(s3, bucket, key, data) {
+  const md5 = crypto.createHash('md5')
+  const hash = md5.update(JSON.stringify(data)).digest('hex')
+
+  if (await isChanged(s3, bucket, key, hash)) {
+    console.log(`writing ${key} with hash ${hash}`)
+
+    const object = {
+      ACL: 'private',
+      Body: Buffer.from(JSON.stringify({ generatedAt: new Date(), ...data })),
+      Bucket: bucket,
+      ContentType: 'application/json',
+      Key: key,
+      Tagging: querystring.stringify({
+        Hash: hash
+      })
+    }
+
+    await s3.putObject(object).promise()
+  } else {
+    console.log(`file ${key} has not changed`)
+  }
 }
 
 exports.handler = async function () {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const client = await getDatabase()
   const bucket = await getAssetsBucket()
-  const settings = JSON.stringify(await getSettingsBody(client))
+  const { exposures, language } = await getSettingsBody(client)
 
-  const settingsObject = {
-    ACL: 'private',
-    Body: Buffer.from(settings),
-    Bucket: bucket,
-    ContentType: 'application/json',
-    Key: 'settings.json'
-  }
+  await updateIfChanged(s3, bucket, 'exposures.json', exposures)
+  await updateIfChanged(s3, bucket, 'language.json', language)
+  await updateIfChanged(s3, bucket, 'settings.json', { ...exposures, ...language })
 
-  await s3.putObject(settingsObject).promise()
-
-  return settings
+  return { exposures, language }
 }
 
 runIfDev(exports.handler)
