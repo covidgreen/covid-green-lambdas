@@ -1,0 +1,241 @@
+name: Deploy lambdas to PROD
+
+on:
+  push:
+    branches:
+      - prod
+
+jobs:
+  deploy-cti:
+    name: Deploy to CTI
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
+        aws_region: eu-west-1
+        function_name: prod-cti-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.CTI_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.CTI_PROD_SECRET }}
+        AWS_REGION: eu-west-1
+      run: ./scripts/update-lambda-alias.sh "prod-cti-authorizer" "-live"
+
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
+        aws_region: eu-west-1
+        function_name: prod-cti-download
+        zip_file: lambdas.zip
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
+        aws_region: eu-west-1
+        function_name: prod-cti-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
+        aws_region: eu-west-1
+        function_name: prod-cti-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
+        aws_region: eu-west-1
+        function_name: prod-cti-upload
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
+        aws_region: eu-west-1
+        function_name: prod-cti-token
+        zip_file: lambdas.zip
+
+  deploy-ni:
+    name: Deploy to NI
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-ni-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.NI_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.NI_PROD_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "prod-ni-authorizer" "-live"
+
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-ni-download
+        zip_file: lambdas.zip
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-ni-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-ni-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-ni-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-ni-upload
+        zip_file: lambdas.zip
+
+  deploy-gi:
+    name: Deploy to GI
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-gct-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.GI_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.GI_PROD_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "prod-gct-authorizer" "-live"
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-gct-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-gct-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-gct-token
+        zip_file: lambdas.zip

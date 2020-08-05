@@ -1,0 +1,373 @@
+name: Deploy lambdas to QA
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  deploy-cti:
+    name: Deploy to CTI
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
+        aws_region: eu-west-1
+        function_name: qa-fight-together-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.CTI_QA_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.CTI_QA_SECRET }}
+        AWS_REGION: eu-west-1
+      run: ./scripts/update-lambda-alias.sh "qa-fight-together-authorizer" "-live"
+
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
+        aws_region: eu-west-1
+        function_name: qa-fight-together-download
+        zip_file: lambdas.zip
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
+        aws_region: eu-west-1
+        function_name: qa-fight-together-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
+        aws_region: eu-west-1
+        function_name: qa-fight-together-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
+        aws_region: eu-west-1
+        function_name: qa-fight-together-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
+        aws_region: eu-west-1
+        function_name: qa-fight-together-upload
+        zip_file: lambdas.zip
+
+  deploy-ni:
+    name: Deploy to NI
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.NI_QA_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.NI_QA_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "qa-ni-authorizer" "-live"
+
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-download
+        zip_file: lambdas.zip
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-upload
+        zip_file: lambdas.zip
+
+  deploy-penn:
+    name: Deploy to PA
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.PA_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.PA_QA_SECRET }}
+        aws_region: us-east-1
+        function_name: qa-penn-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.PA_QA_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.PA_QA_SECRET }}
+        AWS_REGION: us-east-1
+      run: ./scripts/update-lambda-alias.sh "qa-penn-authorizer" "-live"
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.PA_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.PA_QA_SECRET }}
+        aws_region: us-east-1
+        function_name: qa-penn-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.PA_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.PA_QA_SECRET }}
+        aws_region: us-east-1
+        function_name: qa-penn-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.PA_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.PA_QA_SECRET }}
+        aws_region: us-east-1
+        function_name: qa-penn-token
+        zip_file: lambdas.zip
+
+  deploy-scot:
+    name: Deploy to SCOT
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-scot-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.SCOT_QA_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.SCOT_QA_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "qa-scot-authorizer" "-live"
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-scot-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-scot-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-scot-token
+        zip_file: lambdas.zip
+
+  deploy-jers:
+    name: Deploy to JERS
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-jers-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.JERS_QA_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.JERS_QA_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "qa-jers-authorizer" "-live"
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-jers-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-jers-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-jers-token
+        zip_file: lambdas.zip
