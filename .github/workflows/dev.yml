@@ -45,6 +45,15 @@ jobs:
         AWS_REGION: eu-west-1
       run: ./scripts/update-lambda-alias.sh "dev-fight-together-authorizer" "-live"
 
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_region: eu-west-1
+        function_name: dev-fight-together-download
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -70,6 +79,15 @@ jobs:
         aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
         aws_region: eu-west-1
         function_name: dev-fight-together-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_region: eu-west-1
+        function_name: dev-fight-together-upload
         zip_file: lambdas.zip
 
   deploy-ni:
