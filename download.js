@@ -94,6 +94,14 @@ exports.handler = async function () {
       batchTag = data.batchTag
 
       if (data.exposures.length > 0) {
+        for (const { keyData } of data.exposures) {
+          const decodedKeyData = Buffer.from(keyData, 'base64')
+
+          if (decodedKeyData.length !== 16) {
+            throw new BadRequest('Invalid key length')
+          }
+        }
+
         await insertExposures(client, data.exposures)
       }
 
