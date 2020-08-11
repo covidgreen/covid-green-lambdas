@@ -50,9 +50,11 @@ exports.handler = async function () {
   if (exposures.length === 0) {
     console.log('no exposures to upload')
   } else {
-    await client.transact(async transaction => {
+    await client.query('BEGIN')
+
+    try {
       const lastExposureId = exposures[exposures.length - 1].id
-      const batchTag = await createBatch(transaction, exposures.length, lastExposureId)
+      const batchTag = await createBatch(client, exposures.length, lastExposureId)
       const key = await JWK.asKey(privateKey, 'pem')
       const sign = JWS.createSign({ format: 'compact' }, key)
 
@@ -81,9 +83,13 @@ exports.handler = async function () {
       }
 
       const { insertedExposures } = await result.json()
+      await client.query('COMMIT')
 
       console.log(`uploaded ${exposures.length} to batch ${batchTag}, ${insertedExposures} of which were stored`)
-    })
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    }
   }
 }
 
