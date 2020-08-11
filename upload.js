@@ -47,35 +47,49 @@ exports.handler = async function () {
   const firstExposureId = await getFirstExposureId(client)
   const exposures = await getExposures(client, firstExposureId)
 
-  if (exposures.length > 0) {
-    const lastExposureId = exposures[exposures.length - 1].id
-    const batchTag = await createBatch(client, exposures.length, lastExposureId)
-    const key = await JWK.asKey(privateKey, 'pem')
-    const sign = JWS.createSign({ format: 'compact' }, key)
-
-    const payload = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period, regions }) => ({
-      keyData: key_data,
-      rollingStartNumber: rolling_start_number,
-      transmissionRiskLevel: transmission_risk_level,
-      rollingPeriod: rolling_period,
-      regions: regions
-    }))
-
-    await fetch(`${url}/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        batchTag,
-        payload: await sign.update(JSON.stringify(payload), 'utf8').final()
-      })
-    })
-
-    console.log(`uploaded ${exposures.length} to batch ${batchTag}`)
-  } else {
+  if (exposures.length === 0) {
     console.log('no exposures to upload')
+  } else {
+    await client.query('BEGIN')
+
+    try {
+      const lastExposureId = exposures[exposures.length - 1].id
+      const batchTag = await createBatch(client, exposures.length, lastExposureId)
+      const key = await JWK.asKey(privateKey, 'pem')
+      const sign = JWS.createSign({ format: 'compact' }, key)
+
+      const payload = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period, regions }) => ({
+        keyData: key_data,
+        rollingStartNumber: rolling_start_number,
+        transmissionRiskLevel: transmission_risk_level,
+        rollingPeriod: rolling_period,
+        regions: regions
+      }))
+
+      const result = await fetch(`${url}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          batchTag,
+          payload: await sign.update(JSON.stringify(payload), 'utf8').final()
+        })
+      })
+
+      if (!result.ok) {
+        throw new Error(`Upload failed with ${result.status} response`)
+      }
+
+      const { insertedExposures } = await result.json()
+      await client.query('COMMIT')
+
+      console.log(`uploaded ${exposures.length} to batch ${batchTag}, ${insertedExposures} of which were stored`)
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    }
   }
 }
 
