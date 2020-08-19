@@ -107,8 +107,30 @@ async function getExposures(client, since) {
   `
 
   const { rows } = await client.query(query)
+  const exposures = []
 
-  return rows
+  for (const row of rows) {
+    const endDate = new Date((row.rolling_start_number + row.rolling_period) * 1000 * 600)
+
+    if (endDate > new Date()) {
+      console.log(`re-inserting key ${row.id} for future processing as it is still valid until ${endDate}`)
+
+      await client.query(`
+        WITH deleted AS (
+          DELETE FROM exposures
+          WHERE id = ${row.id}
+          RETURNING key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
+        )
+        INSERT INTO exposures (key_data, rolling_period, rolling_start_number, transmission_risk_level, regions)
+        SELECT key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
+        FROM deleted
+      `)
+    } else {
+      exposures.push(row)
+    }
+  }
+
+  return exposures
 }
 
 function createExportFile(privateKey, signatureInfoPayload, exposures, region, batchNum, batchSize) {
