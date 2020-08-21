@@ -1,7 +1,7 @@
 const fetch = require('node-fetch')
 const querystring = require('querystring')
 const SQL = require('@nearform/sql')
-const { getDatabase, getInteropConfig, runIfDev } = require('./utils')
+const { getDatabase, getInteropConfig, insertMetric, runIfDev } = require('./utils')
 
 async function getFirstBatchTag(client) {
   const query = SQL`
@@ -63,7 +63,9 @@ async function insertExposures(client, exposures) {
     SQL` ON CONFLICT ON CONSTRAINT exposures_key_data_unique DO NOTHING`
   )
 
-  await client.query(query)
+  const { rowCount } = await client.query(query)
+
+  return rowCount
 }
 
 exports.handler = async function () {
@@ -75,6 +77,7 @@ exports.handler = async function () {
 
   let more = true
   let batchTag = await getFirstBatchTag(client)
+  let inserted = 0
 
   do {
     const query = querystring.stringify({ batchTag })
@@ -102,15 +105,16 @@ exports.handler = async function () {
           }
         }
 
-        await insertExposures(client, data.exposures)
+        inserted += await insertExposures(client, data.exposures)
       }
 
       await insertBatch(client, batchTag)
 
       console.log(`added ${data.exposures.length} exposures from batch ${batchTag}`)
     } else if (response.status === 204) {
-      more = false
+      await insertMetric(client, 'INTEROP_KEYS_DOWNLOADED', '', '', inserted)
 
+      more = false
       console.log('no more batches to download')
     } else {
       throw new Exception('Request failed')
