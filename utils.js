@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk')
+const fetch = require('node-fetch')
 const jwt = require('jsonwebtoken')
 const pg = require('pg')
 
@@ -44,21 +45,34 @@ async function getDatabase() {
       getParameter('db_database')
     ])
 
-    client = new pg.Client({
+    const options = {
       host,
       database,
       user,
       password,
-      port: Number(port),
-      ssl: ssl === 'true'
-    })
+      port: Number(port)
+    }
+
+    if (/true/i.test(ssl)) {
+      const certResponse = await fetch('https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem')
+      const certBody = await certResponse.text()
+
+      options.ssl = {
+        ca: [certBody],
+        rejectUnauthorized: true
+      }
+    } else {
+      options.ssl = false
+    }
+
+    client = new pg.Client(options)
   } else {
     const { user, password, host, port, ssl, database } = {
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       host: process.env.DB_HOST,
       port: Number(process.env.DB_PORT),
-      ssl:  /true/i.test(process.env.DB_SSL),
+      ssl: /true/i.test(process.env.DB_SSL) ? { rejectUnauthorized: false } : false,
       database: process.env.DB_DATABASE
     }
 
@@ -68,7 +82,7 @@ async function getDatabase() {
       user,
       password,
       port: Number(port),
-      ssl: ssl === 'true'
+      ssl
     })
   }
 
