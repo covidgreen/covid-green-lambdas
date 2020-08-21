@@ -142,44 +142,6 @@ function createExportFile(privateKey, signatureInfoPayload, exposures, region, b
       return true
     })
 
-    const keys = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period }) => ({
-      keyData: key_data,
-      rollingStartIntervalNumber: rolling_start_number,
-      transmissionRiskLevel: transmission_risk_level,
-      rollingPeriod: rolling_period
-    }))
-
-    const filteredKeys = keys.filter(({ keyData }) => {
-      const decodedKeyData = Buffer.from(keyData, 'base64')
-
-      if (decodedKeyData.length !== 16) {
-        console.log(`excluding invalid key ${keyData}, length was ${decodedKeyData.length}`)
-
-        return false
-      }
-
-      return true
-    })
-
-    const keys = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period }) => ({
-      keyData: key_data,
-      rollingStartIntervalNumber: rolling_start_number,
-      transmissionRiskLevel: transmission_risk_level,
-      rollingPeriod: rolling_period
-    }))
-
-    const filteredKeys = keys.filter(({ keyData }) => {
-      const decodedKeyData = Buffer.from(keyData, 'base64')
-
-      if (decodedKeyData.length !== 16) {
-        console.log(`excluding invalid key ${keyData}, length was ${decodedKeyData.length}`)
-
-        return false
-      }
-
-      return true
-    })
-
     const tekExportPayload = {
       startTimestamp: Math.floor(startDate / 1000),
       endTimestamp: Math.floor(endDate / 1000),
