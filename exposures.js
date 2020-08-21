@@ -123,6 +123,25 @@ function createExportFile(privateKey, signatureInfoPayload, exposures, region, b
     const signatureList = root.lookupType('TEKSignatureList')
     const sign = crypto.createSign('sha256')
 
+    const keys = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period }) => ({
+      keyData: key_data,
+      rollingStartIntervalNumber: rolling_start_number,
+      transmissionRiskLevel: transmission_risk_level,
+      rollingPeriod: rolling_period
+    }))
+
+    const filteredKeys = keys.filter(({ keyData }) => {
+      const decodedKeyData = Buffer.from(keyData, 'base64')
+
+      if (decodedKeyData.length !== 16) {
+        console.log(`excluding invalid key ${keyData}, length was ${decodedKeyData.length}`)
+
+        return false
+      }
+
+      return true
+    })
+
     const tekExportPayload = {
       startTimestamp: Math.floor(startDate / 1000),
       endTimestamp: Math.floor(endDate / 1000),
@@ -130,12 +149,7 @@ function createExportFile(privateKey, signatureInfoPayload, exposures, region, b
       batchNum,
       batchSize,
       signatureInfos: [signatureInfoPayload],
-      keys: exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period }) => ({
-        keyData: key_data,
-        rollingStartIntervalNumber: rolling_start_number,
-        transmissionRiskLevel: transmission_risk_level,
-        rollingPeriod: rolling_period
-      }))
+      keys: filteredKeys
     }
 
     const tekExportMessage = tekExport.create(tekExportPayload)

@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk')
+const SQL = require('@nearform/sql')
 const fetch = require('node-fetch')
 const jwt = require('jsonwebtoken')
 const pg = require('pg')
@@ -150,6 +151,16 @@ async function getJwtSecret() {
   }
 }
 
+async function insertMetric(client, event, os, version, value = 1) {
+  const query = SQL`
+    INSERT INTO metrics (date, event, os, version, value)
+    VALUES (CURRENT_DATE, ${event}, ${os}, ${version}, ${value})
+    ON CONFLICT ON CONSTRAINT metrics_pkey
+    DO UPDATE SET value = metrics.value + ${value}`
+
+  await client.query(query)
+}
+
 function isAuthorized(token, secret) {
   try {
     const data = jwt.verify(token.replace(/^Bearer /, ''), secret)
@@ -184,6 +195,7 @@ module.exports = {
   getExposuresConfig,
   getInteropConfig,
   getJwtSecret,
+  insertMetric,
   isAuthorized,
   runIfDev
 }
