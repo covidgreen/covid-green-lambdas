@@ -46,16 +46,21 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
   const results = {}
   const exposures = await getExposures(client, firstExposureId)
 
+  let firstExposureCreatedAt = null
+  let lastExposureCreatedAt = null
   let lastExposureId = firstExposureId
-  let firstExposureCreatedAt = new Date()
 
   for (const { id, created_at, regions, ...exposure } of exposures) {
     if (id > lastExposureId) {
       lastExposureId = id
     }
 
-    if (created_at < firstExposureCreatedAt) {
+    if (firstExposureCreatedAt === null || created_at < firstExposureCreatedAt) {
       firstExposureCreatedAt = created_at
+    }
+
+    if (lastExposureCreatedAt === null || created_at > lastExposureCreatedAt) {
+      lastExposureCreatedAt = created_at
     }
 
     for (const region of regions) {
@@ -80,7 +85,7 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
 
       const exportFileObject = {
         ACL: 'private',
-        Body: await createExportFile(privateKey, signatureInfoPayload, exposures, region, 1, 1),
+        Body: await createExportFile(privateKey, signatureInfoPayload, exposures, region, 1, 1, firstExposureCreatedAt, lastExposureCreatedAt),
         Bucket: bucket,
         ContentType: 'application/zip',
         Key: path
@@ -111,15 +116,12 @@ async function getExposures(client, since) {
   return rows
 }
 
-function createExportFile(privateKey, signatureInfoPayload, exposures, region, batchNum, batchSize) {
+function createExportFile(privateKey, signatureInfoPayload, exposures, region, batchNum, batchSize, startDate, endDate) {
   return new Promise(async resolve => {
     const root = await protobuf.load('exposures.proto')
     const tekExport = root.lookupType('TemporaryExposureKeyExport')
     const signatureList = root.lookupType('TEKSignatureList')
     const sign = crypto.createSign('sha256')
-
-    const startDate = exposures.reduce((current, { created_at }) => current === null || new Date(created_at) < current ? new Date(created_at) : current, null)
-    const endDate = exposures.reduce((current, { created_at }) => current === null || new Date(created_at) > current ? new Date(created_at) : current, null)
 
     const keys = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period }) => ({
       keyData: key_data,
