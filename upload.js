@@ -1,7 +1,7 @@
 const fetch = require('node-fetch')
 const SQL = require('@nearform/sql')
 const { JWK, JWS } = require('node-jose')
-const { getDatabase, getInteropConfig, runIfDev } = require('./utils')
+const { getDatabase, getInteropConfig, insertMetric, runIfDev } = require('./utils')
 
 async function createBatch(client, count, lastExposureId) {
   const query = SQL`
@@ -83,6 +83,8 @@ exports.handler = async function () {
       }
 
       const { insertedExposures } = await result.json()
+
+      await insertMetric(client, 'INTEROP_KEYS_UPLOADED', '', '', Number(insertedExposures))
       await client.query('COMMIT')
 
       console.log(`uploaded ${exposures.length} to batch ${batchTag}, ${insertedExposures} of which were stored`)
