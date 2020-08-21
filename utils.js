@@ -6,7 +6,9 @@ const pg = require('pg')
 
 const isProduction = /^\s*production\s*$/i.test(process.env.NODE_ENV)
 const ssm = new AWS.SSM({ region: process.env.AWS_REGION })
-const secretsManager = new AWS.SecretsManager({ region: process.env.AWS_REGION })
+const secretsManager = new AWS.SecretsManager({
+  region: process.env.AWS_REGION
+})
 
 async function getParameter(id) {
   const response = await ssm
@@ -38,7 +40,13 @@ async function getDatabase() {
   let client
 
   if (isProduction) {
-    const [{ username: user, password }, host, port, ssl, database] = await Promise.all([
+    const [
+      { username: user, password },
+      host,
+      port,
+      ssl,
+      database
+    ] = await Promise.all([
       getSecret('rds-read-write'),
       getParameter('db_host'),
       getParameter('db_port'),
@@ -55,7 +63,9 @@ async function getDatabase() {
     }
 
     if (/true/i.test(ssl)) {
-      const certResponse = await fetch('https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem')
+      const certResponse = await fetch(
+        'https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem'
+      )
       const certBody = await certResponse.text()
 
       options.ssl = {
@@ -73,7 +83,9 @@ async function getDatabase() {
       password: process.env.DB_PASSWORD,
       host: process.env.DB_HOST,
       port: Number(process.env.DB_PORT),
-      ssl: /true/i.test(process.env.DB_SSL) ? { rejectUnauthorized: false } : false,
+      ssl: /true/i.test(process.env.DB_SSL)
+        ? { rejectUnauthorized: false }
+        : false,
       database: process.env.DB_DATABASE
     }
 
@@ -95,7 +107,12 @@ async function getDatabase() {
 async function getExposuresConfig() {
   if (isProduction) {
     const [
-      { privateKey, signatureAlgorithm, verificationKeyId, verificationKeyVersion },
+      {
+        privateKey,
+        signatureAlgorithm,
+        verificationKeyId,
+        verificationKeyVersion
+      },
       appBundleId,
       defaultRegion,
       nativeRegions

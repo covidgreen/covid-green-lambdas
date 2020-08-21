@@ -2,7 +2,24 @@
 
 # AWS Lambda Function Implementations
 
-Documentation to be added
+This repository contains various lambdas useful within the Covid Green system.
+
+## Local Development: Running the Lambdas
+
+There are a number of handy commands you can run to help with development.
+​
+| Command | Action |
+| --- | --- |
+| `npm run create:env` | Create new .env file |
+| `npm test` | Execute all lambdas in a limited testing mode - should at least find compile errors |
+| `npm run test:exposures` | Run test for exposures |
+| `npm run test:settings` | Run test for settings |
+| `npm run test:authorizer` | Run test for authorizer. The `authorizationToken` value is a JWT signed with key equal to string `secret` |
+| `npm run test:token:metrics` | Run test for token specific to metrics |
+| `npm run test:token:push` | Run test for token specific to push |
+| `npm run test:token:register` | Run test for token specific to register |
+| `npm run lint` | Run eslint |
+| `npm run lint:fix` | Run eslint in fix mode |
 
 ## Team
 
@@ -22,13 +39,9 @@ Documentation to be added
 
 ### Contributors
 
-* TBD
-* TBD
+* @dennisgove - Dennis Gove <dpgove@gmail.com>
 
 ### Past Contributors
-
-* TBD
-* TBD
 
 ## Hosted By
 
