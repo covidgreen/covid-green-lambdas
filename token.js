@@ -3,9 +3,15 @@ const SQL = require('@nearform/sql')
 const { getDatabase, getJwtSecret, runIfDev } = require('./utils')
 
 exports.handler = async function (event) {
+  const { description, type } = event
+
+  if (!description) {
+    throw new Error('Description is missing')
+  }
+
   const sql = SQL`
     INSERT INTO tokens (type, description)
-    VALUES (${event.type || 'push'}, ${event.description || ''})
+    VALUES (${type || 'push'}, ${description})
     RETURNING id`
 
   const secret = await getJwtSecret()
