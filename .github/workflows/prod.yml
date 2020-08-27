@@ -305,3 +305,69 @@ jobs:
         aws_region: us-east-1
         function_name: prod-penn-token
         zip_file: lambdas.zip
+
+  deploy-scot:
+    name: Deploy to SCOT
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-scot-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.SCOT_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.SCOT_PROD_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "prod-scot-authorizer" "-live"
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-scot-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-scot-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-scot-token
+        zip_file: lambdas.zip
