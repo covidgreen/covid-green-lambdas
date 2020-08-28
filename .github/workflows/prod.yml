@@ -371,3 +371,69 @@ jobs:
         aws_region: eu-west-2
         function_name: prod-scot-token
         zip_file: lambdas.zip
+
+  deploy-jers:
+    name: Deploy to JERS
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-jers-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.JERS_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.JERS_PROD_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "prod-jers-authorizer" "-live"
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-jers-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-jers-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-jers-token
+        zip_file: lambdas.zip
