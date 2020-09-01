@@ -437,3 +437,69 @@ jobs:
         aws_region: eu-west-2
         function_name: prod-jers-token
         zip_file: lambdas.zip
+
+  deploy-dela:
+    name: Deploy to DE
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.DE_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.DE_PROD_SECRET }}
+        aws_region: us-east-1
+        function_name: prod-dela-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.DE_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.DE_PROD_SECRET }}
+        AWS_REGION: us-east-1
+      run: ./scripts/update-lambda-alias.sh "prod-dela-authorizer" "-live"
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.DE_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.DE_PROD_SECRET }}
+        aws_region: us-east-1
+        function_name: prod-dela-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.DE_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.DE_PROD_SECRET }}
+        aws_region: us-east-1
+        function_name: prod-dela-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.DE_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.DE_PROD_SECRET }}
+        aws_region: us-east-1
+        function_name: prod-dela-token
+        zip_file: lambdas.zip
