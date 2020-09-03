@@ -39,7 +39,7 @@ async function removeExpiredTokens(client, tokenLifetime) {
   console.log(`deleted ${rowCount} tokens older than ${tokenLifetime} minutes`)
 }
 
-exports.handler = async function () {
+exports.handler = async function() {
   const client = await getDatabase()
   const { codeLifetime, tokenLifetime } = await getExpiryConfig()
 
