@@ -37,7 +37,7 @@ async function getAssetsBucket() {
 async function getExpiryConfig() {
   if (isProduction) {
     const [codeLifetime, tokenLifetime] = await Promise.all([
-      getParameter('security_code_lifetime_mins'),
+      getParameter('security_code_removal_mins'),
       getParameter('upload_token_lifetime_mins')
     ])
 
