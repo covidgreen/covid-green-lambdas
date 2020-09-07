@@ -148,10 +148,14 @@ async function getExposures(client, since) {
   const exposures = []
 
   for (const row of rows) {
-    const endDate = new Date((row.rolling_start_number + row.rolling_period) * 1000 * 600)
+    const endDate = new Date(
+      (row.rolling_start_number + row.rolling_period) * 1000 * 600
+    )
 
     if (endDate > new Date()) {
-      console.log(`re-inserting key ${row.id} for future processing as it is still valid until ${endDate}`)
+      console.log(
+        `re-inserting key ${row.id} for future processing as it is still valid until ${endDate}`
+      )
 
       await client.query(`
         WITH deleted AS (
