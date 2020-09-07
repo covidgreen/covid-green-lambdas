@@ -14,8 +14,12 @@ async function getSettingsBody(client) {
     language: {}
   }
 
-  for (const { is_language, settings_key, settings_value } of rows) {
-    result[is_language ? 'language' : 'exposures'][settings_key] = settings_value
+  for (const {
+    is_language: isLanguage,
+    settings_key: settingsKey,
+    settings_value: settingsValue
+  } of rows) {
+    result[isLanguage ? 'language' : 'exposures'][settingsKey] = settingsValue
   }
 
   return unflatten(result)
@@ -23,7 +27,9 @@ async function getSettingsBody(client) {
 
 async function isChanged(s3, bucket, key, hash) {
   try {
-    const { TagSet } = await s3.getObjectTagging({ Bucket: bucket, Key: key }).promise()
+    const { TagSet } = await s3
+      .getObjectTagging({ Bucket: bucket, Key: key })
+      .promise()
 
     for (const { Key, Value } of TagSet) {
       if (Key === 'Hash') {
@@ -61,7 +67,7 @@ async function updateIfChanged(s3, bucket, key, data) {
   }
 }
 
-exports.handler = async function () {
+exports.handler = async function() {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const client = await getDatabase()
   const bucket = await getAssetsBucket()
@@ -69,7 +75,10 @@ exports.handler = async function () {
 
   await updateIfChanged(s3, bucket, 'exposures.json', exposures)
   await updateIfChanged(s3, bucket, 'language.json', language)
-  await updateIfChanged(s3, bucket, 'settings.json', { ...exposures, ...language })
+  await updateIfChanged(s3, bucket, 'settings.json', {
+    ...exposures,
+    ...language
+  })
 
   return { exposures, language }
 }

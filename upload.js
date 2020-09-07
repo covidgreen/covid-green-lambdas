@@ -1,7 +1,12 @@
 const fetch = require('node-fetch')
 const SQL = require('@nearform/sql')
 const { JWK, JWS } = require('node-jose')
-const { getDatabase, getInteropConfig, insertMetric, runIfDev } = require('./utils')
+const {
+  getDatabase,
+  getInteropConfig,
+  insertMetric,
+  runIfDev
+} = require('./utils')
 
 async function createBatch(client, count, lastExposureId) {
   const query = SQL`
@@ -41,7 +46,7 @@ async function getExposures(client, since) {
   return rows
 }
 
-exports.handler = async function () {
+exports.handler = async function() {
   const { privateKey, token, url } = await getInteropConfig()
   const client = await getDatabase()
   const firstExposureId = await getFirstExposureId(client)
@@ -54,22 +59,34 @@ exports.handler = async function () {
 
     try {
       const lastExposureId = exposures[exposures.length - 1].id
-      const batchTag = await createBatch(client, exposures.length, lastExposureId)
+      const batchTag = await createBatch(
+        client,
+        exposures.length,
+        lastExposureId
+      )
       const key = await JWK.asKey(privateKey, 'pem')
       const sign = JWS.createSign({ format: 'compact' }, key)
 
-      const payload = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period, regions }) => ({
-        keyData: key_data,
-        rollingStartNumber: rolling_start_number,
-        transmissionRiskLevel: transmission_risk_level,
-        rollingPeriod: rolling_period,
-        regions: regions
-      }))
+      const payload = exposures.map(
+        ({
+          key_data: keyData,
+          rolling_start_number: rollingStartNumber,
+          transmission_risk_level: transmissionRiskLevel,
+          rolling_period: rollingPeriod,
+          regions
+        }) => ({
+          keyData: keyData,
+          rollingStartNumber: rollingStartNumber,
+          transmissionRiskLevel: transmissionRiskLevel,
+          rollingPeriod: rollingPeriod,
+          regions: regions
+        })
+      )
 
       const result = await fetch(`${url}/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -84,10 +101,18 @@ exports.handler = async function () {
 
       const { insertedExposures } = await result.json()
 
-      await insertMetric(client, 'INTEROP_KEYS_UPLOADED', '', '', Number(insertedExposures))
+      await insertMetric(
+        client,
+        'INTEROP_KEYS_UPLOADED',
+        '',
+        '',
+        Number(insertedExposures)
+      )
       await client.query('COMMIT')
 
-      console.log(`uploaded ${exposures.length} to batch ${batchTag}, ${insertedExposures} of which were stored`)
+      console.log(
+        `uploaded ${exposures.length} to batch ${batchTag}, ${insertedExposures} of which were stored`
+      )
     } catch (err) {
       await client.query('ROLLBACK')
       throw err
