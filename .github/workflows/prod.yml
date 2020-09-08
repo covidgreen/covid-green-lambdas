@@ -45,6 +45,24 @@ jobs:
         AWS_REGION: eu-west-1
       run: ./scripts/update-lambda-alias.sh "prod-cti-authorizer" "-live"
 
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
+        aws_region: eu-west-1
+        function_name: prod-cti-cleanup
+        zip_file: lambdas.zip
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
+        aws_region: eu-west-1
+        function_name: prod-cti-cleanup
+        zip_file: lambdas.zip
+
     - name: Deploy download
       uses: appleboy/lambda-action@master
       with:
@@ -128,6 +146,15 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.NI_PROD_SECRET }}
         AWS_REGION: eu-west-2
       run: ./scripts/update-lambda-alias.sh "prod-ni-authorizer" "-live"
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-ni-cleanup
+        zip_file: lambdas.zip
 
     - name: Deploy download
       uses: appleboy/lambda-action@master
