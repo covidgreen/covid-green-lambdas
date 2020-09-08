@@ -34,6 +34,22 @@ async function getAssetsBucket() {
   }
 }
 
+async function getExpiryConfig() {
+  if (isProduction) {
+    const [codeLifetime, tokenLifetime] = await Promise.all([
+      getParameter('security_code_removal_mins'),
+      getParameter('upload_token_lifetime_mins')
+    ])
+
+    return { codeLifetime, tokenLifetime }
+  } else {
+    return {
+      codeLifetime: process.env.CODE_LIFETIME_MINS,
+      tokenLifetime: process.env.UPLOAD_TOKEN_LIFETIME_MINS
+    }
+  }
+}
+
 async function getDatabase() {
   require('pg-range').install(pg)
 
@@ -209,6 +225,7 @@ function runIfDev(fn) {
 module.exports = {
   getAssetsBucket,
   getDatabase,
+  getExpiryConfig,
   getExposuresConfig,
   getInteropConfig,
   getJwtSecret,
