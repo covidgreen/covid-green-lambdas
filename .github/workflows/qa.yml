@@ -45,6 +45,24 @@ jobs:
         AWS_REGION: eu-west-1
       run: ./scripts/update-lambda-alias.sh "qa-fight-together-authorizer" "-live"
 
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
+        aws_region: eu-west-1
+        function_name: qa-fight-together-cleanup
+        zip_file: lambdas.zip
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
+        aws_region: eu-west-1
+        function_name: qa-fight-together-cleanup
+        zip_file: lambdas.zip
+
     - name: Deploy download
       uses: appleboy/lambda-action@master
       with:
@@ -128,6 +146,24 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.NI_QA_SECRET }}
         AWS_REGION: eu-west-2
       run: ./scripts/update-lambda-alias.sh "qa-ni-authorizer" "-live"
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-cleanup
+        zip_file: lambdas.zip
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-cleanup
+        zip_file: lambdas.zip
 
     - name: Deploy download
       uses: appleboy/lambda-action@master

@@ -45,6 +45,15 @@ jobs:
         AWS_REGION: eu-west-1
       run: ./scripts/update-lambda-alias.sh "dev-fight-together-authorizer" "-live"
 
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_region: eu-west-1
+        function_name: dev-fight-together-cleanup
+        zip_file: lambdas.zip
+
     - name: Deploy download
       uses: appleboy/lambda-action@master
       with:
