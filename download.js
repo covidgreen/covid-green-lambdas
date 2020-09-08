@@ -108,8 +108,7 @@ exports.handler = async function() {
           const decodedKeyData = Buffer.from(keyData, 'base64')
 
           if (decodedKeyData.length !== 16) {
-            // eslint-disable-next-line no-undef
-            throw new BadRequest('Invalid key length')
+            throw new Error('Invalid key length')
           }
         }
 
