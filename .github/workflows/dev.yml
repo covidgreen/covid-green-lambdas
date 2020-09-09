@@ -54,15 +54,6 @@ jobs:
         function_name: dev-nfcs-cleanup
         zip_file: lambdas.zip
 
-    - name: Deploy download
-      uses: appleboy/lambda-action@master
-      with:
-        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
-        aws_region: eu-west-1
-        function_name: dev-nfcs-download
-        zip_file: lambdas.zip
-
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -88,13 +79,4 @@ jobs:
         aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
         function_name: dev-nfcs-token
-        zip_file: lambdas.zip
-
-    - name: Deploy upload
-      uses: appleboy/lambda-action@master
-      with:
-        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
-        aws_region: eu-west-1
-        function_name: dev-nfcs-upload
         zip_file: lambdas.zip
