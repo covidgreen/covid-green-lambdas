@@ -6,8 +6,8 @@ on:
       - nearform
 
 jobs:
-  deploy-cti:
-    name: Deploy to CTI
+  deploy-nfcs:
+    name: Deploy to NFCS
     runs-on: ubuntu-latest
 
     steps:
@@ -32,69 +32,69 @@ jobs:
     - name: Deploy authorizer
       uses: appleboy/lambda-action@master
       with:
-        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
-        function_name: dev-fight-together-authorizer
+        function_name: dev-nfcs-authorizer
         zip_file: lambdas.zip
 
     - name: Update authorizer alias
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.CTI_DEV_KEY }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.CTI_DEV_SECRET }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.NFCS_DEV_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.NFCS_DEV_SECRET }}
         AWS_REGION: eu-west-1
-      run: ./scripts/update-lambda-alias.sh "dev-fight-together-authorizer" "-live"
+      run: ./scripts/update-lambda-alias.sh "dev-nfcs-authorizer" "-live"
 
     - name: Deploy cleanup
       uses: appleboy/lambda-action@master
       with:
-        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
-        function_name: dev-fight-together-cleanup
+        function_name: dev-nfcs-cleanup
         zip_file: lambdas.zip
 
     - name: Deploy download
       uses: appleboy/lambda-action@master
       with:
-        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
-        function_name: dev-fight-together-download
+        function_name: dev-nfcs-download
         zip_file: lambdas.zip
 
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
-        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
-        function_name: dev-fight-together-exposures
+        function_name: dev-nfcs-exposures
         zip_file: lambdas.zip
 
     - name: Deploy settings
       uses: appleboy/lambda-action@master
       with:
-        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
-        function_name: dev-fight-together-settings
+        function_name: dev-nfcs-settings
         zip_file: lambdas.zip
 
     - name: Deploy token
       uses: appleboy/lambda-action@master
       with:
-        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
-        function_name: dev-fight-together-token
+        function_name: dev-nfcs-token
         zip_file: lambdas.zip
 
     - name: Deploy upload
       uses: appleboy/lambda-action@master
       with:
-        aws_access_key_id: ${{ secrets.CTI_DEV_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_DEV_SECRET }}
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
-        function_name: dev-fight-together-upload
+        function_name: dev-nfcs-upload
         zip_file: lambdas.zip
