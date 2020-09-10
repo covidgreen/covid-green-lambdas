@@ -54,15 +54,6 @@ jobs:
         function_name: prod-cti-cleanup
         zip_file: lambdas.zip
 
-    - name: Deploy cleanup
-      uses: appleboy/lambda-action@master
-      with:
-        aws_access_key_id: ${{ secrets.CTI_PROD_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_PROD_SECRET }}
-        aws_region: eu-west-1
-        function_name: prod-cti-cleanup
-        zip_file: lambdas.zip
-
     - name: Deploy download
       uses: appleboy/lambda-action@master
       with:
@@ -240,6 +231,15 @@ jobs:
         AWS_REGION: eu-west-2
       run: ./scripts/update-lambda-alias.sh "prod-gct-authorizer" "-live"
 
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-gct-cleanup
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -305,6 +305,15 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.PA_PROD_SECRET }}
         AWS_REGION: us-east-1
       run: ./scripts/update-lambda-alias.sh "prod-penn-authorizer" "-live"
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.PA_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.PA_PROD_SECRET }}
+        aws_region: us-east-1
+        function_name: prod-penn-cleanup
+        zip_file: lambdas.zip
 
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
@@ -372,6 +381,15 @@ jobs:
         AWS_REGION: eu-west-2
       run: ./scripts/update-lambda-alias.sh "prod-scot-authorizer" "-live"
 
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-scot-cleanup
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -438,6 +456,15 @@ jobs:
         AWS_REGION: eu-west-2
       run: ./scripts/update-lambda-alias.sh "prod-jers-authorizer" "-live"
 
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-jers-cleanup
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -503,6 +530,15 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.DE_PROD_SECRET }}
         AWS_REGION: us-east-1
       run: ./scripts/update-lambda-alias.sh "prod-dela-authorizer" "-live"
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.DE_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.DE_PROD_SECRET }}
+        aws_region: us-east-1
+        function_name: prod-dela-cleanup
+        zip_file: lambdas.zip
 
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
