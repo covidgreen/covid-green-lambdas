@@ -47,7 +47,13 @@ async function getExposures(client, since) {
 }
 
 exports.handler = async function() {
-  const { certificate, origin, privateKey, token, url } = await getInteropConfig()
+  const {
+    certificate,
+    origin,
+    privateKey,
+    token,
+    url
+  } = await getInteropConfig()
   const client = await getDatabase()
   const firstExposureId = await getFirstExposureId(client)
   const exposures = await getExposures(client, firstExposureId)
@@ -73,16 +79,25 @@ exports.handler = async function() {
         REVOKED: 5
       }
 
-      const keys = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period, regions, days_since_onset }) => ({
-        keyData: key_data,
-        rollingStartIntervalNumber: rolling_start_number,
-        transmissionRiskLevel: transmission_risk_level,
-        rollingPeriod: rolling_period,
-        visitedCountries: regions,
-        reportType: 'CONFIRMED_CLINICAL_DIAGNOSIS',
-        days_since_onset_of_symptoms: days_since_onset,
-        origin
-      }))
+      const keys = exposures.map(
+        ({
+          key_data: keyData,
+          rolling_start_number: rollingStartIntervalNumber,
+          transmission_risk_level: transmissionRiskLevel,
+          rolling_period: rollingPeriod,
+          regions: visitedCountries,
+          days_since_onset: days_since_onset_of_symptoms // eslint-disable-line camelcase
+        }) => ({
+          keyData,
+          rollingStartIntervalNumber,
+          transmissionRiskLevel,
+          rollingPeriod,
+          visitedCountries,
+          reportType: 'CONFIRMED_CLINICAL_DIAGNOSIS',
+          days_since_onset_of_symptoms, // eslint-disable-line camelcase
+          origin
+        })
+      )
 
       const data = Buffer.concat(
         keys
@@ -90,59 +105,79 @@ exports.handler = async function() {
             if (a.keyData < b.keyData) {
               return -1
             }
-      
+
             if (a.keyData > b.keyData) {
               return 1
             }
-      
+
             return 0
           })
-          .map(({ keyData, rollingStartIntervalNumber, rollingPeriod, transmissionRiskLevel, visitedCountries, origin, reportType, days_since_onset_of_symptoms }) => {
-            const rollingStartIntervalNumberBuffer = Buffer.alloc(4)
-            const rollingPeriodBuffer = Buffer.alloc(4)
-            const transmissionRiskLevelBuffer = Buffer.alloc(4)
-            const reportTypeBuffer = Buffer.alloc(4)
-            const daysSinceOnsetOfSymptomsBuffer = Buffer.alloc(4)
-      
-            rollingStartIntervalNumberBuffer.writeUInt32BE(rollingStartIntervalNumber)
-            rollingPeriodBuffer.writeUInt32BE(rollingPeriod)
-            transmissionRiskLevelBuffer.writeInt32BE(transmissionRiskLevel)
-            reportTypeBuffer.writeInt32BE(reportTypes[reportType] || 0)
-            daysSinceOnsetOfSymptomsBuffer.writeUInt32BE(days_since_onset_of_symptoms)
-      
-            return Buffer.concat([
-              Buffer.from(Buffer.from(keyData, 'base64').toString('utf-8')),
-              rollingStartIntervalNumberBuffer,
-              rollingPeriodBuffer,
-              transmissionRiskLevelBuffer,
-              ...visitedCountries.map(country => Buffer.from(country)),
-              Buffer.from(origin),
-              reportTypeBuffer,
-              daysSinceOnsetOfSymptomsBuffer
-            ])
-          })
+          .map(
+            ({
+              keyData,
+              rollingStartIntervalNumber,
+              rollingPeriod,
+              transmissionRiskLevel,
+              visitedCountries,
+              origin,
+              reportType,
+              days_since_onset_of_symptoms // eslint-disable-line camelcase
+            }) => {
+              const rollingStartIntervalNumberBuffer = Buffer.alloc(4)
+              const rollingPeriodBuffer = Buffer.alloc(4)
+              const transmissionRiskLevelBuffer = Buffer.alloc(4)
+              const reportTypeBuffer = Buffer.alloc(4)
+              const daysSinceOnsetOfSymptomsBuffer = Buffer.alloc(4)
+
+              rollingStartIntervalNumberBuffer.writeUInt32BE(
+                rollingStartIntervalNumber
+              )
+              rollingPeriodBuffer.writeUInt32BE(rollingPeriod)
+              transmissionRiskLevelBuffer.writeInt32BE(transmissionRiskLevel)
+              reportTypeBuffer.writeInt32BE(reportTypes[reportType] || 0)
+              daysSinceOnsetOfSymptomsBuffer.writeUInt32BE(
+                days_since_onset_of_symptoms
+              )
+
+              return Buffer.concat([
+                Buffer.from(Buffer.from(keyData, 'base64').toString('utf-8')),
+                rollingStartIntervalNumberBuffer,
+                rollingPeriodBuffer,
+                transmissionRiskLevelBuffer,
+                ...visitedCountries.map(country => Buffer.from(country)),
+                Buffer.from(origin),
+                reportTypeBuffer,
+                daysSinceOnsetOfSymptomsBuffer
+              ])
+            }
+          )
       )
-      
+
       const signed = jsrsasign.KJUR.asn1.cms.CMSUtil.newSignedData({
         content: { hex: data.toString('hex') },
         certs: [certificate],
         detached: false,
-        signerInfos: [{
-          hashAlg: 'sha256',
-          sAttr: {
-            SigningTime: {}
-          },
-          signerCert: certificate,
-          sigAlg: 'SHA1withRSA',
-          signerPrvKey: privateKey
-        }]
+        signerInfos: [
+          {
+            hashAlg: 'sha256',
+            sAttr: {
+              SigningTime: {}
+            },
+            signerCert: certificate,
+            sigAlg: 'SHA1withRSA',
+            signerPrvKey: privateKey
+          }
+        ]
       })
 
       const result = await fetch(`${url}/upload`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          batchSignature: Buffer.from(signed.getContentInfoEncodedHex(), 'hex').toString('base64'),
+          batchSignature: Buffer.from(
+            signed.getContentInfoEncodedHex(),
+            'hex'
+          ).toString('base64'),
           batchTag,
           'Content-Type': 'application/json'
         },

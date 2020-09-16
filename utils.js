@@ -164,13 +164,7 @@ async function getExposuresConfig() {
 async function getInteropConfig() {
   if (isProduction) {
     const [
-      {
-        certificate,
-        maxAge,
-        privateKey,
-        token,
-        url
-      },
+      { certificate, maxAge, privateKey, token, url },
       origin
     ] = await Promise.all([
       getSecret('interop'),

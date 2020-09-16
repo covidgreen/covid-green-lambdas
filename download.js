@@ -1,5 +1,4 @@
 const fetch = require('node-fetch')
-const querystring = require('querystring')
 const SQL = require('@nearform/sql')
 const {
   getDatabase,
@@ -48,9 +47,10 @@ async function insertExposures(client, exposures) {
       transmissionRiskLevel,
       visitedCountries,
       origin,
-      days_since_onset_of_symptoms
+      days_since_onset_of_symptoms: daysSinceOnset // eslint-disable-line camelcase
     }
   ] of exposures.entries()) {
+    // eslint-disable-next-line camelcase
     query.append(
       SQL`(
         ${keyData},
@@ -59,7 +59,7 @@ async function insertExposures(client, exposures) {
         ${transmissionRiskLevel},
         ${visitedCountries},
         ${origin},
-        ${days_since_onset_of_symptoms}
+        ${daysSinceOnset} 
       )`
     )
 
@@ -89,9 +89,7 @@ exports.handler = async function() {
   let inserted = 0
 
   do {
-    const downloadUrl = `${url}/download/${date
-      .toISOString()
-      .substr(0, 10)}`
+    const downloadUrl = `${url}/download/${date.toISOString().substr(0, 10)}`
 
     const response = await fetch(downloadUrl, {
       method: 'GET',
