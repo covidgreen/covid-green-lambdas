@@ -50,7 +50,6 @@ async function insertExposures(client, exposures) {
       days_since_onset_of_symptoms: daysSinceOnset // eslint-disable-line camelcase
     }
   ] of exposures.entries()) {
-    // eslint-disable-next-line camelcase
     query.append(
       SQL`(
         ${keyData},

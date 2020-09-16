@@ -188,19 +188,18 @@ exports.handler = async function() {
         throw new Error(`Upload failed with ${result.status} response`)
       }
 
-      const { insertedExposures } = await result.json()
-
       await insertMetric(
         client,
         'INTEROP_KEYS_UPLOADED',
         '',
         '',
-        Number(insertedExposures)
+        Number(exposures.length)
       )
+
       await client.query('COMMIT')
 
       console.log(
-        `uploaded ${exposures.length} to batch ${batchTag}, ${insertedExposures} of which were stored`
+        `uploaded ${exposures.length} to batch ${batchTag}`
       )
     } catch (err) {
       await client.query('ROLLBACK')
