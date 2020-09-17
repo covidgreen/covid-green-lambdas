@@ -198,9 +198,7 @@ exports.handler = async function() {
 
       await client.query('COMMIT')
 
-      console.log(
-        `uploaded ${exposures.length} to batch ${batchTag}`
-      )
+      console.log(`uploaded ${exposures.length} to batch ${batchTag}`)
     } catch (err) {
       await client.query('ROLLBACK')
       throw err
