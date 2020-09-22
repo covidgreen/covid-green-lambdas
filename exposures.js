@@ -149,8 +149,8 @@ async function getExposures(client, since, config) {
 
   for (const row of rows) {
     const endDate = new Date(
-      ((row.rolling_start_number + row.rolling_period) * 1000 * 600) +
-      (config.varianceOffsetMins * 1000 * 60)
+      (row.rolling_start_number + row.rolling_period) * 1000 * 600 +
+        config.varianceOffsetMins * 1000 * 60
     )
 
     if (config.disableValidKeyCheck === false && endDate > new Date()) {
