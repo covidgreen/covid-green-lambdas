@@ -59,7 +59,7 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
     ...signatureInfoPayload
   } = config
   const results = {}
-  const exposures = await getExposures(client, firstExposureId)
+  const exposures = await getExposures(client, firstExposureId, config)
 
   let firstExposureCreatedAt = null
   let lastExposureCreatedAt = null
@@ -136,7 +136,7 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
   }
 }
 
-async function getExposures(client, since) {
+async function getExposures(client, since, config) {
   const query = SQL`
     SELECT id, created_at, key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
     FROM exposures
@@ -149,10 +149,11 @@ async function getExposures(client, since) {
 
   for (const row of rows) {
     const endDate = new Date(
-      (row.rolling_start_number + row.rolling_period) * 1000 * 600
+      (row.rolling_start_number + row.rolling_period) * 1000 * 600 +
+        config.varianceOffsetMins * 1000 * 60
     )
 
-    if (endDate > new Date()) {
+    if (config.disableValidKeyCheck === false && endDate > new Date()) {
       console.log(
         `re-inserting key ${row.id} for future processing as it is still valid until ${endDate}`
       )
