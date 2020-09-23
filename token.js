@@ -24,7 +24,7 @@ exports.handler = async function(event) {
 
   const [{ id }] = rows
 
-  return jwt.sign({ id }, secret, { expiresIn: '1y' })
+  return jwt.sign({ id }, secret)
 }
 
 runIfDev(exports.handler)

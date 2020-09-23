@@ -131,20 +131,26 @@ async function getExposuresConfig() {
       },
       appBundleId,
       defaultRegion,
-      nativeRegions
+      disableValidKeyCheck,
+      nativeRegions,
+      varianceOffsetMins
     ] = await Promise.all([
       getSecret('exposures'),
       getParameter('app_bundle_id'),
       getParameter('default_region'),
-      getParameter('native_regions')
+      getParameter('disable_valid_key_check'),
+      getParameter('native_regions'),
+      getParameter('variance_offset_mins')
     ])
 
     return {
       appBundleId,
       defaultRegion,
+      disableValidKeyCheck: /true/i.test(disableValidKeyCheck),
       nativeRegions: nativeRegions.split(','),
       privateKey,
       signatureAlgorithm,
+      varianceOffsetMins: Number(varianceOffsetMins),
       verificationKeyId,
       verificationKeyVersion
     }
@@ -152,9 +158,11 @@ async function getExposuresConfig() {
     return {
       appBundleId: process.env.APP_BUNDLE_ID,
       defaultRegion: process.env.EXPOSURES_DEFAULT_REGION,
+      disableValidKeyCheck: /true/i.test(process.env.DISABLE_VALID_KEY_CHECK),
       nativeRegions: process.env.EXPOSURES_NATIVE_REGIONS.split(','),
       privateKey: process.env.EXPOSURES_PRIVATE_KEY,
       signatureAlgorithm: process.env.EXPOSURES_SIGNATURE_ALGORITHM,
+      varianceOffsetMins: Number(process.env.VARIANCE_OFFSET_MINS),
       verificationKeyId: process.env.EXPOSURES_KEY_ID,
       verificationKeyVersion: process.env.EXPOSURES_KEY_VERSION
     }
@@ -163,10 +171,27 @@ async function getExposuresConfig() {
 
 async function getInteropConfig() {
   if (isProduction) {
-    return await getSecret('interop')
+    const [
+      { certificate, maxAge, privateKey, token, url },
+      origin
+    ] = await Promise.all([
+      getSecret('interop'),
+      getParameter('default_region')
+    ])
+
+    return {
+      certificate,
+      maxAge,
+      origin,
+      privateKey,
+      token,
+      url
+    }
   } else {
     return {
+      certificate: process.env.INTEROP_CERTIFICATE,
       maxAge: Number(process.env.INTEROP_MAX_AGE),
+      origin: process.env.EXPOSURES_DEFAULT_REGION,
       privateKey: process.env.INTEROP_PRIVATE_KEY,
       token: process.env.INTEROP_TOKEN,
       url: process.env.INTEROP_URL
