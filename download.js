@@ -1,4 +1,5 @@
 const fetch = require('node-fetch')
+const querystring = require('querystring')
 const SQL = require('@nearform/sql')
 const {
   getDatabase,
@@ -36,29 +37,25 @@ async function insertBatch(client, batchTag) {
 }
 
 async function insertExposures(client, exposures) {
-  const query = SQL`INSERT INTO exposures (key_data, rolling_period, rolling_start_number, transmission_risk_level, regions, origin, days_since_onset) VALUES `
+  const query = SQL`INSERT INTO exposures (key_data, rolling_period, rolling_start_number, transmission_risk_level, regions) VALUES `
 
   for (const [
     index,
     {
       keyData,
       rollingPeriod,
-      rollingStartIntervalNumber,
+      rollingStartNumber,
       transmissionRiskLevel,
-      visitedCountries,
-      origin,
-      days_since_onset_of_symptoms: daysSinceOnset // eslint-disable-line camelcase
+      regions
     }
   ] of exposures.entries()) {
     query.append(
       SQL`(
         ${keyData},
         ${rollingPeriod},
-        ${rollingStartIntervalNumber},
+        ${rollingStartNumber},
         ${transmissionRiskLevel},
-        ${visitedCountries},
-        ${origin},
-        ${daysSinceOnset} 
+        ${regions}
       )`
     )
 
@@ -88,22 +85,26 @@ exports.handler = async function() {
   let inserted = 0
 
   do {
-    const downloadUrl = `${url}/download/${date.toISOString().substr(0, 10)}`
+    const query = querystring.stringify({ batchTag })
+    const downloadUrl = `${url}/download/${date
+      .toISOString()
+      .substr(0, 10)}?${query}`
 
     const response = await fetch(downloadUrl, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        batchTag
+        'Content-Type': 'application/json'
       }
     })
 
     if (response.status === 200) {
       const data = await response.json()
 
-      if (data.keys.length > 0) {
-        for (const { keyData } of data.keys) {
+      batchTag = data.batchTag
+
+      if (data.exposures.length > 0) {
+        for (const { keyData } of data.exposures) {
           const decodedKeyData = Buffer.from(keyData, 'base64')
 
           if (decodedKeyData.length !== 16) {
@@ -111,20 +112,14 @@ exports.handler = async function() {
           }
         }
 
-        inserted += await insertExposures(client, data.keys)
+        inserted += await insertExposures(client, data.exposures)
       }
 
-      await insertBatch(client, data.batchTag)
+      await insertBatch(client, batchTag)
 
       console.log(
-        `added ${data.keys.length} exposures from batch ${data.batchTag}`
+        `added ${data.exposures.length} exposures from batch ${batchTag}`
       )
-
-      if (data.nextBatchTag) {
-        batchTag = data.nextBatchTag
-      } else {
-        more = false
-      }
     } else if (response.status === 204) {
       await insertMetric(client, 'INTEROP_KEYS_DOWNLOADED', '', '', inserted)
 
