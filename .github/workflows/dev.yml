@@ -80,3 +80,8 @@ jobs:
         aws_region: eu-west-1
         function_name: dev-nfcs-token
         zip_file: lambdas.zip
+
+    - name: Create deployment annotation in dashboard
+      run: |
+        npm i --g aws-cloudwatch-annotations
+        aws-cw-annotate dev-nfcs --title 'Deployment lambda.${{ github.sha }}'
