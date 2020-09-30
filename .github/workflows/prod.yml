@@ -100,6 +100,10 @@ jobs:
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.CTI_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.CTI_PROD_SECRET }}
+        AWS_REGION: eu-west-1
       run: |
         npm i --g aws-cloudwatch-annotations
         aws-cw-annotate prod-cti --title 'Deployment lambda.${{ github.sha }}'
@@ -198,6 +202,10 @@ jobs:
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.NI_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.NI_PROD_SECRET }}
+        AWS_REGION: eu-west-2
       run: |
         npm i --g aws-cloudwatch-annotations
         aws-cw-annotate prod-ni --title 'Deployment lambda.${{ github.sha }}'
@@ -278,6 +286,10 @@ jobs:
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.GI_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.GI_PROD_SECRET }}
+        AWS_REGION: eu-west-2
       run: |
         npm i --g aws-cloudwatch-annotations
         aws-cw-annotate prod-gct --title 'Deployment lambda.${{ github.sha }}'
@@ -358,6 +370,10 @@ jobs:
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.PA_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.PA_PROD_SECRET }}
+        AWS_REGION: us-east-1
       run: |
         npm i --g aws-cloudwatch-annotations
         aws-cw-annotate prod-penn --title 'Deployment lambda.${{ github.sha }}'
@@ -438,6 +454,10 @@ jobs:
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.SCOT_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.SCOT_PROD_SECRET }}
+        AWS_REGION: eu-west-2
       run: |
         npm i --g aws-cloudwatch-annotations
         aws-cw-annotate prod-scot --title 'Deployment lambda.${{ github.sha }}'
@@ -518,6 +538,10 @@ jobs:
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.JERS_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.JERS_PROD_SECRET }}
+        AWS_REGION: eu-west-2
       run: |
         npm i --g aws-cloudwatch-annotations
         aws-cw-annotate prod-jers --title 'Deployment lambda.${{ github.sha }}'
@@ -598,6 +622,10 @@ jobs:
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.DE_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.DE_PROD_SECRET }}
+        AWS_REGION: us-east-1
       run: |
         npm i --g aws-cloudwatch-annotations
         aws-cw-annotate prod-dela --title 'Deployment lambda.${{ github.sha }}'
@@ -678,6 +706,10 @@ jobs:
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.NJ_PROD_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.NJ_PROD_SECRET }}
+        AWS_REGION: us-east-1
       run: |
         npm i --g aws-cloudwatch-annotations
         aws-cw-annotate prod-newjers --title 'Deployment lambda.${{ github.sha }}'
