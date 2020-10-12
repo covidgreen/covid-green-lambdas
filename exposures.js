@@ -37,7 +37,7 @@ async function clearExpiredFiles(client, s3, bucket, lastExposureId) {
 async function clearExpiredExposures(client, s3, bucket) {
   const query = SQL`
     DELETE FROM exposures
-    WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '14 days'
+    WHERE created_at < CURRENT_DATE - INTERVAL '14 days'
     RETURNING id
   `
 
@@ -158,7 +158,7 @@ async function getExposures(client, since, config) {
         `re-inserting key ${row.id} for future processing as it is still valid until ${endDate}`
       )
 
-      await client.query(`
+      await client.query(SQL`
         WITH deleted AS (
           DELETE FROM exposures
           WHERE id = ${row.id}

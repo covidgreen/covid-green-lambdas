@@ -174,10 +174,15 @@ async function getInteropConfig() {
     return await getSecret('interop')
   } else {
     return {
-      maxAge: Number(process.env.INTEROP_MAX_AGE),
-      privateKey: process.env.INTEROP_PRIVATE_KEY,
-      token: process.env.INTEROP_TOKEN,
-      url: process.env.INTEROP_URL
+      servers: [
+        {
+          id: process.env.INTEROP_SERVER_ID,
+          maxAge: Number(process.env.INTEROP_MAX_AGE),
+          privateKey: process.env.INTEROP_PRIVATE_KEY,
+          token: process.env.INTEROP_TOKEN,
+          url: process.env.INTEROP_URL
+        }
+      ]
     }
   }
 }

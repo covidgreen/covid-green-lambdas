@@ -8,10 +8,11 @@ const {
   runIfDev
 } = require('./utils')
 
-async function getFirstBatchTag(client) {
+async function getFirstBatchTag(client, serverId) {
   const query = SQL`
     SELECT batch_tag AS "batchTag"
     FROM download_batches
+    WHERE server_id = ${serverId}
     ORDER BY created_at DESC
     LIMIT 1
   `
@@ -27,17 +28,17 @@ async function getFirstBatchTag(client) {
   return batchTag
 }
 
-async function insertBatch(client, batchTag) {
+async function insertBatch(client, batchTag, serverId) {
   const query = SQL`
-    INSERT INTO download_batches (batch_tag)
-    VALUES (${batchTag})
+    INSERT INTO download_batches (batch_tag, server_id)
+    VALUES (${batchTag}, ${serverId})
   `
 
   await client.query(query)
 }
 
 async function insertExposures(client, exposures) {
-  const query = SQL`INSERT INTO exposures (key_data, rolling_period, rolling_start_number, transmission_risk_level, regions) VALUES `
+  const query = SQL`INSERT INTO exposures (key_data, rolling_period, rolling_start_number, transmission_risk_level, regions, origin) VALUES `
 
   for (const [
     index,
@@ -46,7 +47,8 @@ async function insertExposures(client, exposures) {
       rollingPeriod,
       rollingStartNumber,
       transmissionRiskLevel,
-      regions
+      regions,
+      origin
     }
   ] of exposures.entries()) {
     query.append(
@@ -55,7 +57,8 @@ async function insertExposures(client, exposures) {
         ${rollingPeriod},
         ${rollingStartNumber},
         ${transmissionRiskLevel},
-        ${regions}
+        ${regions},
+        ${origin}
       )`
     )
 
@@ -74,61 +77,66 @@ async function insertExposures(client, exposures) {
 }
 
 exports.handler = async function() {
-  const { maxAge, token, url } = await getInteropConfig()
+  const { servers } = await getInteropConfig()
   const client = await getDatabase()
-  const date = new Date()
 
-  date.setDate(date.getDate() - maxAge)
+  for (const { id, maxAge, token, url } of servers) {
+    const date = new Date()
 
-  let more = true
-  let batchTag = await getFirstBatchTag(client)
-  let inserted = 0
+    console.log(`beginning download from ${id}`)
 
-  do {
-    const query = querystring.stringify({ batchTag })
-    const downloadUrl = `${url}/download/${date
-      .toISOString()
-      .substr(0, 10)}?${query}`
+    let more = true
+    let batchTag = await getFirstBatchTag(client, id)
+    let inserted = 0
 
-    const response = await fetch(downloadUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    date.setDate(date.getDate() - maxAge)
 
-    if (response.status === 200) {
-      const data = await response.json()
+    do {
+      const query = querystring.stringify({ batchTag })
+      const downloadUrl = `${url}/download/${date
+        .toISOString()
+        .substr(0, 10)}?${query}`
 
-      batchTag = data.batchTag
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
 
-      if (data.exposures.length > 0) {
-        for (const { keyData } of data.exposures) {
-          const decodedKeyData = Buffer.from(keyData, 'base64')
+      if (response.status === 200) {
+        const data = await response.json()
 
-          if (decodedKeyData.length !== 16) {
-            throw new Error('Invalid key length')
+        batchTag = data.batchTag
+
+        if (data.exposures.length > 0) {
+          for (const { keyData } of data.exposures) {
+            const decodedKeyData = Buffer.from(keyData, 'base64')
+
+            if (decodedKeyData.length !== 16) {
+              throw new Error('Invalid key length')
+            }
           }
+
+          inserted += await insertExposures(client, data.exposures)
         }
 
-        inserted += await insertExposures(client, data.exposures)
+        await insertBatch(client, batchTag, id)
+
+        console.log(
+          `added ${data.exposures.length} exposures from batch ${batchTag}`
+        )
+      } else if (response.status === 204) {
+        await insertMetric(client, 'INTEROP_KEYS_DOWNLOADED', '', '', inserted)
+
+        more = false
+        console.log('no more batches to download')
+      } else {
+        throw new Error('Request failed')
       }
-
-      await insertBatch(client, batchTag)
-
-      console.log(
-        `added ${data.exposures.length} exposures from batch ${batchTag}`
-      )
-    } else if (response.status === 204) {
-      await insertMetric(client, 'INTEROP_KEYS_DOWNLOADED', '', '', inserted)
-
-      more = false
-      console.log('no more batches to download')
-    } else {
-      throw new Error('Request failed')
-    }
-  } while (more)
+    } while (more)
+  }
 }
 
 runIfDev(exports.handler)
