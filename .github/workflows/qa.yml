@@ -315,6 +315,15 @@ jobs:
         function_name: qa-scot-cleanup
         zip_file: lambdas.zip
 
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-scot-download
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -340,6 +349,15 @@ jobs:
         aws_secret_access_key: ${{ secrets.SCOT_QA_SECRET }}
         aws_region: eu-west-2
         function_name: qa-scot-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-scot-upload
         zip_file: lambdas.zip
 
   deploy-jers:
@@ -390,6 +408,15 @@ jobs:
         function_name: qa-jers-cleanup
         zip_file: lambdas.zip
 
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-jers-download
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -415,6 +442,15 @@ jobs:
         aws_secret_access_key: ${{ secrets.JERS_QA_SECRET }}
         aws_region: eu-west-2
         function_name: qa-jers-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-jers-upload
         zip_file: lambdas.zip
 
   deploy-dela:
