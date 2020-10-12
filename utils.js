@@ -171,30 +171,18 @@ async function getExposuresConfig() {
 
 async function getInteropConfig() {
   if (isProduction) {
-    const [
-      { certificate, maxAge, privateKey, token, url },
-      origin
-    ] = await Promise.all([
-      getSecret('interop'),
-      getParameter('default_region')
-    ])
-
-    return {
-      certificate,
-      maxAge,
-      origin,
-      privateKey,
-      token,
-      url
-    }
+    return await getSecret('interop')
   } else {
     return {
-      certificate: process.env.INTEROP_CERTIFICATE,
-      maxAge: Number(process.env.INTEROP_MAX_AGE),
-      origin: process.env.EXPOSURES_DEFAULT_REGION,
-      privateKey: process.env.INTEROP_PRIVATE_KEY,
-      token: process.env.INTEROP_TOKEN,
-      url: process.env.INTEROP_URL
+      servers: [
+        {
+          id: process.env.INTEROP_SERVER_ID,
+          maxAge: Number(process.env.INTEROP_MAX_AGE),
+          privateKey: process.env.INTEROP_PRIVATE_KEY,
+          token: process.env.INTEROP_TOKEN,
+          url: process.env.INTEROP_URL
+        }
+      ]
     }
   }
 }
