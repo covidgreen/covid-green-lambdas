@@ -602,3 +602,78 @@ jobs:
         aws_region: us-east-1
         function_name: qa-newjers-token
         zip_file: lambdas.zip
+
+  deploy-gi:
+    name: Deploy to GI
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.13.1'
+
+    - name: Install app dependencies
+      run: npm install
+
+    - name: Package lambdas
+      run: |
+        npm run artifact:create
+      env:
+        ORG: managed
+        BUILD: 0.0.1
+
+    - name: Deploy authorizer
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-gct-authorizer
+        zip_file: lambdas.zip
+
+    - name: Update authorizer alias
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.GI_QA_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.GI_QA_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "qa-gct-authorizer" "-live"
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-gct-cleanup
+        zip_file: lambdas.zip
+
+    - name: Deploy exposures
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-gct-exposures
+        zip_file: lambdas.zip
+
+    - name: Deploy settings
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-gct-settings
+        zip_file: lambdas.zip
+
+    - name: Deploy token
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-gct-token
+        zip_file: lambdas.zip
