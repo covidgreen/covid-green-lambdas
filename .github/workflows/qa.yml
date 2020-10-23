@@ -576,6 +576,15 @@ jobs:
         function_name: qa-newjers-cleanup
         zip_file: lambdas.zip
 
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NJ_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NJ_QA_SECRET }}
+        aws_region: us-east-1
+        function_name: qa-newjers-download
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -601,6 +610,15 @@ jobs:
         aws_secret_access_key: ${{ secrets.NJ_QA_SECRET }}
         aws_region: us-east-1
         function_name: qa-newjers-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NJ_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NJ_QA_SECRET }}
+        aws_region: us-east-1
+        function_name: qa-newjers-upload
         zip_file: lambdas.zip
 
   deploy-gi:
