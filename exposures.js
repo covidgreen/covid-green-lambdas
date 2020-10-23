@@ -58,7 +58,10 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
     privateKey,
     ...signatureInfoPayload
   } = config
-  const results = {}
+  const results = {
+    [defaultRegion]: []
+  }
+
   const exposures = await getExposures(client, firstExposureId, config)
 
   let firstExposureCreatedAt = null
@@ -78,18 +81,7 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
       lastExposureCreatedAt = createdAt
     }
 
-    for (const region of regions) {
-      const resolvedRegion =
-        nativeRegions.includes('*') || nativeRegions.includes(region)
-          ? defaultRegion
-          : region
-
-      if (results[resolvedRegion] === undefined) {
-        results[resolvedRegion] = []
-      }
-
-      results[resolvedRegion].push(exposure)
-    }
+    results[defaultRegion].push(exposure)
   }
 
   for (const [region, exposures] of Object.entries(results)) {
