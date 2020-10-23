@@ -2,6 +2,7 @@ const { isAuthorized, runIfDev } = require('./utils')
 
 exports.handler = async function(event) {
   const secret = process.env.JWT_SECRET
+
   if (!secret) {
     console.log('Error acquiring secret from env')
 
