@@ -428,6 +428,15 @@ jobs:
         function_name: prod-scot-cleanup
         zip_file: lambdas.zip
 
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-scot-download
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -453,6 +462,15 @@ jobs:
         aws_secret_access_key: ${{ secrets.SCOT_PROD_SECRET }}
         aws_region: eu-west-2
         function_name: prod-scot-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.SCOT_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.SCOT_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-scot-upload
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
@@ -512,6 +530,15 @@ jobs:
         function_name: prod-jers-cleanup
         zip_file: lambdas.zip
 
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-jers-download
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -537,6 +564,15 @@ jobs:
         aws_secret_access_key: ${{ secrets.JERS_PROD_SECRET }}
         aws_region: eu-west-2
         function_name: prod-jers-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.JERS_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.JERS_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-jers-upload
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
