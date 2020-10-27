@@ -58,10 +58,7 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
     privateKey,
     ...signatureInfoPayload
   } = config
-  const results = {
-    [defaultRegion]: []
-  }
-
+  const results = {}
   const exposures = await getExposures(client, firstExposureId, config)
 
   let firstExposureCreatedAt = null
@@ -79,6 +76,10 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
 
     if (lastExposureCreatedAt === null || createdAt > lastExposureCreatedAt) {
       lastExposureCreatedAt = createdAt
+    }
+
+    if (results[defaultRegion] === undefined) {
+      results[defaultRegion] = []
     }
 
     results[defaultRegion].push(exposure)
@@ -99,24 +100,26 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
       const now = new Date()
       const path = `exposures/${region.toLowerCase()}/${now.getTime()}.zip`
 
-      const exportFileObject = {
-        ACL: 'private',
-        Body: await createExportFile(
-          privateKey,
-          signatureInfoPayload,
-          exposures,
-          region,
-          1,
-          1,
-          firstExposureCreatedAt,
-          lastExposureCreatedAt
-        ),
-        Bucket: bucket,
-        ContentType: 'application/zip',
-        Key: path
-      }
+      if (bucket) {
+        const exportFileObject = {
+          ACL: 'private',
+          Body: await createExportFile(
+            privateKey,
+            signatureInfoPayload,
+            exposures,
+            region,
+            1,
+            1,
+            firstExposureCreatedAt,
+            lastExposureCreatedAt
+          ),
+          Bucket: bucket,
+          ContentType: 'application/zip',
+          Key: path
+        }
 
-      await s3.putObject(exportFileObject).promise()
+        await s3.putObject(exportFileObject).promise()
+      }
 
       const query = SQL`
         INSERT INTO exposure_export_files (path, exposure_count, since_exposure_id, last_exposure_id, first_exposure_created_at, region)
