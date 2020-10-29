@@ -59,7 +59,7 @@ async function insertExposures(client, exposures) {
         ${keyData},
         ${rollingPeriod},
         ${rollingStartNumber},
-        ${transmissionRiskLevel},
+        ${transmissionRiskLevel || 0},
         ${regions},
         ${origin},
         ${daysSinceOnset || 0}
@@ -80,15 +80,14 @@ async function insertExposures(client, exposures) {
   return rowCount
 }
 
-async function downloadFromInterop(client, id, maxAge, token, url) {
-  const date = new Date()
-
+async function downloadFromInterop(client, id, maxAge, token, url, event) {
   console.log(`beginning download from ${url}`)
 
   let more = true
   let batchTag = await getFirstBatchTag(client, id)
   let inserted = 0
 
+  const date = event.date ? new Date(event.date) : new Date()
   date.setDate(date.getDate() - maxAge)
 
   do {
@@ -138,8 +137,9 @@ async function downloadFromInterop(client, id, maxAge, token, url) {
   } while (more)
 }
 
-async function downloadFromEfgs(client, config) {
+async function downloadFromEfgs(client, config, event) {
   const { auth, url } = config
+  const date = event.date ? new Date(event.date) : new Date()
 
   console.log(`beginning download from ${url}`)
 
@@ -147,8 +147,6 @@ async function downloadFromEfgs(client, config) {
     cert: Buffer.from(auth.cert, 'utf-8'),
     key: Buffer.from(auth.key, 'utf-8')
   })
-
-  const date = new Date().toISOString().substr(0, 10)
 
   let batchTag = null
   let more = true
@@ -164,7 +162,7 @@ async function downloadFromEfgs(client, config) {
 
     try {
       const result = await axios.get(
-        `${url}/diagnosiskeys/download/${date}`,
+        `${url}/diagnosiskeys/download/${date.toISOString().substr(0, 10)}`,
         {
           headers,
           httpsAgent
@@ -213,16 +211,16 @@ async function downloadFromEfgs(client, config) {
   }
 }
 
-exports.handler = async function() {
+exports.handler = async function(event) {
   const { efgs, servers } = await getInteropConfig()
   const client = await getDatabase()
 
   for (const { id, maxAge, token, url } of servers) {
-    await downloadFromInterop(client, id, maxAge, token, url)
+    await downloadFromInterop(client, id, maxAge, token, url, event)
   }
 
   if (efgs && efgs.download) {
-    await downloadFromEfgs(client, efgs)
+    await downloadFromEfgs(client, efgs, event)
   }
 }
 
