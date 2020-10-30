@@ -157,10 +157,35 @@ async function getExposures(client, since, config) {
         WITH deleted AS (
           DELETE FROM exposures
           WHERE id = ${row.id}
-          RETURNING key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
+          RETURNING
+            key_data,
+            rolling_period,
+            rolling_start_number,
+            transmission_risk_level,
+            regions,
+            test_type,
+            origin,
+            days_since_onset
         )
-        INSERT INTO exposures (key_data, rolling_period, rolling_start_number, transmission_risk_level, regions)
-        SELECT key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
+        INSERT INTO exposures (
+          key_data,
+            rolling_period,
+            rolling_start_number,
+            transmission_risk_level,
+            regions,
+            test_type,
+            origin,
+            days_since_onset
+        )
+        SELECT
+          key_data,
+          rolling_period,
+          rolling_start_number,
+          transmission_risk_level,
+          regions,
+          test_type,
+          origin,
+          days_since_onset
         FROM deleted
       `)
     } else {
