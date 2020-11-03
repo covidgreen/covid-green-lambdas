@@ -260,6 +260,15 @@ jobs:
         function_name: prod-gct-cleanup
         zip_file: lambdas.zip
 
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-gct-download
+        zip_file: lambdas.zip
+
     - name: Deploy exposures
       uses: appleboy/lambda-action@master
       with:
@@ -285,6 +294,15 @@ jobs:
         aws_secret_access_key: ${{ secrets.GI_PROD_SECRET }}
         aws_region: eu-west-2
         function_name: prod-gct-token
+        zip_file: lambdas.zip
+
+    - name: Deploy upload
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.GI_PROD_KEY }}
+        aws_secret_access_key: ${{ secrets.GI_PROD_SECRET }}
+        aws_region: eu-west-2
+        function_name: prod-gct-upload
         zip_file: lambdas.zip
 
     - name: Create deployment annotation in dashboard
