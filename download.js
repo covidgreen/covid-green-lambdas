@@ -10,14 +10,22 @@ const {
   runIfDev
 } = require('./utils')
 
-async function getFirstBatchTag(client, serverId) {
+async function getFirstBatchTag(client, serverId, date) {
   const query = SQL`
     SELECT batch_tag AS "batchTag"
     FROM download_batches
-    WHERE server_id = ${serverId}
+    WHERE server_id = ${serverId}`
+
+  if (date) {
+    query.append(SQL`
+      AND created_at::DATE = ${date}::DATE
+    `)
+  }
+
+  query.append(SQL`
     ORDER BY created_at DESC
     LIMIT 1
-  `
+  `)
 
   const { rowCount, rows } = await client.query(query)
 
@@ -148,7 +156,7 @@ async function downloadFromEfgs(client, config, event) {
     key: Buffer.from(auth.key, 'utf-8')
   })
 
-  let batchTag = null
+  let batchTag = await getFirstBatchTag(client, 'efgs', date)
   let more = true
 
   while (more) {
@@ -186,11 +194,13 @@ async function downloadFromEfgs(client, config, event) {
           }
         }
 
+        await insertBatch(client, result.headers.batchtag, 'efgs')
+
         if (keys.length > 0) {
           await insertExposures(client, keys)
         }
 
-        console.log(`inserted ${keys.length} keys from batch ${batchTag}`)
+        console.log(`inserted ${keys.length} keys from batch ${result.headers.batchtag}`)
       } else {
         console.log(`batch ${batchTag} contained no keys, skipping`)
       }
