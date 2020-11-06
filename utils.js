@@ -18,6 +18,19 @@ async function getParameter(id) {
   return response.Parameter.Value
 }
 
+async function getOptionalParameter(id, defaultValue) {
+  try {
+    const response = await ssm
+      .getParameter({ Name: `${process.env.CONFIG_VAR_PREFIX}${id}` })
+      .promise()
+
+    return response.Parameter.Value
+  } catch(error) {
+    console.error(`Optional parameter [${id}] error`, error)
+    return defaultValue
+  }
+}
+
 async function getSecret(id) {
   const response = await secretsManager
     .getSecretValue({ SecretId: `${process.env.CONFIG_VAR_PREFIX}${id}` })
@@ -36,16 +49,18 @@ async function getAssetsBucket() {
 
 async function getExpiryConfig() {
   if (isProduction) {
-    const [codeLifetime, tokenLifetime] = await Promise.all([
+    const [codeLifetime, tokenLifetime, noticeLifetime] = await Promise.all([
       getParameter('security_code_removal_mins'),
-      getParameter('upload_token_lifetime_mins')
+      getParameter('upload_token_lifetime_mins'),
+      getOptionalParameter('self_isolation_notice_lifetime_mins', 20160)
     ])
 
-    return { codeLifetime, tokenLifetime }
+    return { codeLifetime, tokenLifetime, noticeLifetime }
   } else {
     return {
       codeLifetime: process.env.CODE_LIFETIME_MINS,
-      tokenLifetime: process.env.UPLOAD_TOKEN_LIFETIME_MINS
+      tokenLifetime: process.env.UPLOAD_TOKEN_LIFETIME_MINS,
+      noticeLifetime: process.env.NOTICE_LIFETIME_MINS
     }
   }
 }
