@@ -249,6 +249,24 @@ function isAuthorized(token, secret) {
   }
 }
 
+async function getQrConfig() {
+  if (isProduction) {
+    const [appUrl, bucket, sender] = await Promise.all([
+      getParameter('qr_generate_url'),
+      getParameter('s3_qr_bucket'),
+      getParameter('qr_sender')
+    ])
+
+    return { appUrl, bucket, sender }
+  } else {
+    return {
+      appUrl: process.env.QR_APP_URL,
+      bucket: process.env.QR_BUCKET_NAME,
+      sender: process.env.QR_SENDER
+    }
+  }
+}
+
 function runIfDev(fn) {
   if (!isProduction) {
     fn(JSON.parse(process.argv[2] || '{}'))
@@ -264,12 +282,14 @@ function runIfDev(fn) {
 }
 
 module.exports = {
+  isProduction,
   getAssetsBucket,
   getDatabase,
   getExpiryConfig,
   getExposuresConfig,
   getInteropConfig,
   getJwtSecret,
+  getQrConfig,
   insertMetric,
   isAuthorized,
   runIfDev

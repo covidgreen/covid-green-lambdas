@@ -63,6 +63,15 @@ jobs:
         function_name: dev-nfcs-exposures
         zip_file: lambdas.zip
 
+    - name: Deploy qr
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
+        aws_region: eu-west-1
+        function_name: dev-nfcs-qr
+        zip_file: lambdas.zip
+
     - name: Deploy settings
       uses: appleboy/lambda-action@master
       with:
