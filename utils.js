@@ -25,7 +25,7 @@ async function getOptionalParameter(id, defaultValue) {
       .promise()
 
     return response.Parameter.Value
-  } catch(error) {
+  } catch (error) {
     console.error(`Optional parameter [${id}] error`, error)
     return defaultValue
   }
