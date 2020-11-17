@@ -39,13 +39,31 @@ async function removeExpiredTokens(client, tokenLifetime) {
   console.log(`deleted ${rowCount} tokens older than ${tokenLifetime} minutes`)
 }
 
+async function removeOldNoticesKeys(client, noticeLifetime) {
+  const sql = SQL`
+    DELETE FROM notices
+    WHERE created_at < CURRENT_TIMESTAMP - ${`${noticeLifetime} mins`}::INTERVAL
+  `
+
+  const { rowCount } = await client.query(sql)
+
+  console.log(
+    `deleted ${rowCount} notices keys older than ${noticeLifetime} minutes`
+  )
+}
+
 exports.handler = async function() {
   const client = await getDatabase()
-  const { codeLifetime, tokenLifetime } = await getExpiryConfig()
+  const {
+    codeLifetime,
+    tokenLifetime,
+    noticeLifetime
+  } = await getExpiryConfig()
 
   await createRegistrationMetrics(client)
   await removeExpiredCodes(client, codeLifetime)
   await removeExpiredTokens(client, tokenLifetime)
+  await removeOldNoticesKeys(client, noticeLifetime)
 
   return true
 }
