@@ -47,7 +47,7 @@ exports.handler = async function(event) {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const ses = new AWS.SES({ region: process.env.AWS_REGION })
   const transport = createTransport({ SES: ses })
-  const { bucketName, appUrl, sender } = await getQrConfig()
+  const { bucket, appUrl, sender } = await getQrConfig()
 
   console.log(`processing ${event.Records.length} records`)
 
@@ -62,12 +62,12 @@ exports.handler = async function(event) {
       location
     })
 
-    console.log(`writing to ${bucketName}`)
+    console.log(`writing to ${bucket}`)
 
     const object = {
       ACL: 'private',
       Body: data,
-      Bucket: bucketName,
+      Bucket: bucket,
       ContentType: 'application/pdf',
       Key: `${id}.pdf`
     }
