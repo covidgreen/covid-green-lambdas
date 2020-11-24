@@ -1,10 +1,6 @@
 const jwt = require('jsonwebtoken')
 const SQL = require('@nearform/sql')
-const {
-  withDatabase,
-  getJwtSecret,
-  runIfDev
-} = require('./utils')
+const { withDatabase, getJwtSecret, runIfDev } = require('./utils')
 
 exports.handler = async function(event) {
   const { description, type } = event

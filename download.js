@@ -128,7 +128,13 @@ exports.handler = async function() {
             `added ${data.exposures.length} exposures from batch ${batchTag}`
           )
         } else if (response.status === 204) {
-          await insertMetric(client, 'INTEROP_KEYS_DOWNLOADED', '', '', inserted)
+          await insertMetric(
+            client,
+            'INTEROP_KEYS_DOWNLOADED',
+            '',
+            '',
+            inserted
+          )
 
           more = false
           console.log('no more batches to download')

@@ -3,11 +3,7 @@ const SQL = require('@nearform/sql')
 const crypto = require('crypto')
 const querystring = require('querystring')
 const { unflatten } = require('flat')
-const {
-  withDatabase,
-  getAssetsBucket,
-  runIfDev
-} = require('./utils')
+const { withDatabase, getAssetsBucket, runIfDev } = require('./utils')
 
 async function getSettingsBody(client) {
   const sql = SQL`SELECT is_language, settings_key, settings_value FROM settings`

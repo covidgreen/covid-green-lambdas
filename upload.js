@@ -99,7 +99,9 @@ exports.handler = async function() {
             },
             body: JSON.stringify({
               batchTag,
-              payload: await sign.update(JSON.stringify(payload), 'utf8').final()
+              payload: await sign
+                .update(JSON.stringify(payload), 'utf8')
+                .final()
             })
           })
 
