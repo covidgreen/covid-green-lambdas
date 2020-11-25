@@ -1,15 +1,29 @@
 const SQL = require('@nearform/sql')
-const { getDatabase, getExpiryConfig, runIfDev } = require('./utils')
+const {
+  getDatabase,
+  getExpiryConfig,
+  getTimeZone,
+  runIfDev
+} = require('./utils')
 
 async function createRegistrationMetrics(client) {
+  const timeZone = await getTimeZone()
+
   const sql = SQL`
     INSERT INTO metrics (date, event, os, version, value)
-    SELECT CURRENT_DATE, 'REGISTER', '', '', COUNT(id)
-    FROM registrations WHERE created_at::DATE = CURRENT_DATE
+    SELECT
+      (CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE,
+      'REGISTER',
+      '',
+      '',
+      COUNT(id)
+    FROM registrations
+    WHERE
+      (created_at AT TIME ZONE ${timeZone})::DATE =
+      (CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE
     ON CONFLICT ON CONSTRAINT metrics_pkey
     DO UPDATE SET value = EXCLUDED.value
-    RETURNING value
-  `
+    RETURNING value`
 
   const { rows } = await client.query(sql)
   const [{ value }] = rows

@@ -10,24 +10,19 @@ const secretsManager = new AWS.SecretsManager({
   region: process.env.AWS_REGION
 })
 
-async function getParameter(id) {
-  const response = await ssm
-    .getParameter({ Name: `${process.env.CONFIG_VAR_PREFIX}${id}` })
-    .promise()
-
-  return response.Parameter.Value
-}
-
-async function getOptionalParameter(id, defaultValue) {
+async function getParameter(id, defaultValue) {
   try {
     const response = await ssm
       .getParameter({ Name: `${process.env.CONFIG_VAR_PREFIX}${id}` })
       .promise()
 
     return response.Parameter.Value
-  } catch (error) {
-    console.error(`Optional parameter [${id}] error`, error)
-    return defaultValue
+  } catch (err) {
+    if (defaultValue !== undefined) {
+      return defaultValue
+    }
+
+    throw err
   }
 }
 
@@ -52,7 +47,7 @@ async function getExpiryConfig() {
     const [codeLifetime, tokenLifetime, noticeLifetime] = await Promise.all([
       getParameter('security_code_removal_mins'),
       getParameter('upload_token_lifetime_mins'),
-      getOptionalParameter('self_isolation_notice_lifetime_mins', 20160)
+      getParameter('self_isolation_notice_lifetime_mins', 20160)
     ])
 
     return { codeLifetime, tokenLifetime, noticeLifetime }
@@ -212,10 +207,26 @@ async function getJwtSecret() {
   }
 }
 
+async function getTimeZone() {
+  if (isProduction) {
+    return await getParameter('time_zone', 'UTC')
+  } else {
+    return process.env.TIME_ZONE
+  }
+}
+
 async function insertMetric(client, event, os, version, value = 1) {
+  const timeZone = await getTimeZone()
+
   const query = SQL`
     INSERT INTO metrics (date, event, os, version, value)
-    VALUES (CURRENT_DATE, ${event}, ${os}, ${version}, ${value})
+    VALUES (
+      (CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE,
+      ${event},
+      ${os},
+      ${version},
+      ${value}
+    )
     ON CONFLICT ON CONSTRAINT metrics_pkey
     DO UPDATE SET value = metrics.value + ${value}`
 
@@ -257,6 +268,7 @@ module.exports = {
   getExposuresConfig,
   getInteropConfig,
   getJwtSecret,
+  getTimeZone,
   insertMetric,
   isAuthorized,
   runIfDev
