@@ -4,10 +4,10 @@ const https = require('https')
 const querystring = require('querystring')
 const SQL = require('@nearform/sql')
 const {
-  getDatabase,
   getInteropConfig,
   insertMetric,
-  runIfDev
+  runIfDev,
+  withDatabase
 } = require('./utils')
 
 async function getFirstBatchTag(client, serverId, date) {
@@ -223,15 +223,16 @@ async function downloadFromEfgs(client, config, event) {
 
 exports.handler = async function(event) {
   const { efgs, servers } = await getInteropConfig()
-  const client = await getDatabase()
 
-  for (const { id, maxAge, token, url } of servers) {
-    await downloadFromInterop(client, id, maxAge, token, url, event)
-  }
+  await withDatabase(async client => {
+    for (const { id, maxAge, token, url } of servers) {
+      await downloadFromInterop(client, id, maxAge, token, url, event)
+    }
 
-  if (efgs && efgs.download) {
-    await downloadFromEfgs(client, efgs, event)
-  }
+    if (efgs && efgs.download) {
+      await downloadFromEfgs(client, efgs, event)
+    }
+  })
 }
 
 runIfDev(exports.handler)

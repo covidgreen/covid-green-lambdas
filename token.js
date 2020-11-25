@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 const SQL = require('@nearform/sql')
-const { getDatabase, getJwtSecret, runIfDev } = require('./utils')
+const { withDatabase, getJwtSecret, runIfDev } = require('./utils')
 
 exports.handler = async function(event) {
   const { description, type } = event
@@ -15,16 +15,18 @@ exports.handler = async function(event) {
     RETURNING id`
 
   const secret = await getJwtSecret()
-  const client = await getDatabase()
-  const { rowCount, rows } = await client.query(sql)
 
-  if (rowCount === 0) {
-    throw new Error('Unable to create token')
-  }
+  return await withDatabase(async client => {
+    const { rowCount, rows } = await client.query(sql)
 
-  const [{ id }] = rows
+    if (rowCount === 0) {
+      throw new Error('Unable to create token')
+    }
 
-  return jwt.sign({ id }, secret)
+    const [{ id }] = rows
+
+    return jwt.sign({ id }, secret)
+  })
 }
 
 runIfDev(exports.handler)
