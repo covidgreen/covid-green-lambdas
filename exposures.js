@@ -4,8 +4,8 @@ const crypto = require('crypto')
 const protobuf = require('protobufjs')
 const SQL = require('@nearform/sql')
 const {
+  withDatabase,
   getAssetsBucket,
-  getDatabase,
   getExposuresConfig,
   runIfDev
 } = require('./utils')
@@ -333,21 +333,22 @@ async function uploadExposuresSince(client, s3, bucket, config, since) {
 
 exports.handler = async function() {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
-  const client = await getDatabase()
   const bucket = await getAssetsBucket()
   const config = await getExposuresConfig()
   const date = new Date()
 
-  await uploadExposuresSince(client, s3, bucket, config, date)
-
-  date.setHours(0, 0, 0, 0)
-
-  for (let i = 0; i < 14; i++) {
+  await withDatabase(async client => {
     await uploadExposuresSince(client, s3, bucket, config, date)
-    date.setDate(date.getDate() - 1)
-  }
 
-  await clearExpiredExposures(client, s3, bucket)
+    date.setHours(0, 0, 0, 0)
+
+    for (let i = 0; i < 14; i++) {
+      await uploadExposuresSince(client, s3, bucket, config, date)
+      date.setDate(date.getDate() - 1)
+    }
+
+    await clearExpiredExposures(client, s3, bucket)
+  })
 
   return true
 }

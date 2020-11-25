@@ -6,10 +6,10 @@ const SQL = require('@nearform/sql')
 const { JWK, JWS } = require('node-jose')
 const { differenceInDays } = require('date-fns')
 const {
-  getDatabase,
   getInteropConfig,
   insertMetric,
-  runIfDev
+  runIfDev,
+  withDatabase
 } = require('./utils')
 
 async function createBatch(client, count, lastExposureId, serverId) {
@@ -295,15 +295,16 @@ async function uploadToEfgs(client, config) {
 
 exports.handler = async function () {
   const { efgs, servers } = await getInteropConfig()
-  const client = await getDatabase()
 
-  for (const { id, privateKey, token, url } of servers) {
-    await uploadToInterop(client, id, privateKey, token, url)
-  }
+  await withDatabase(async client => {
+    for (const { id, privateKey, token, url } of servers) {
+      await uploadToInterop(client, id, privateKey, token, url)
+    }
 
-  if (efgs && efgs.upload) {
-    await uploadToEfgs(client, efgs)
-  }
+    if (efgs && efgs.upload) {
+      await uploadToEfgs(client, efgs)
+    }
+  })
 }
 
 runIfDev(exports.handler)
