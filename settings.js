@@ -3,7 +3,7 @@ const SQL = require('@nearform/sql')
 const crypto = require('crypto')
 const querystring = require('querystring')
 const { unflatten } = require('flat')
-const { getAssetsBucket, getDatabase, runIfDev } = require('./utils')
+const { withDatabase, getAssetsBucket, runIfDev } = require('./utils')
 
 async function getSettingsBody(client) {
   const sql = SQL`SELECT is_language, settings_key, settings_value FROM settings`
@@ -69,18 +69,20 @@ async function updateIfChanged(s3, bucket, key, data) {
 
 exports.handler = async function() {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
-  const client = await getDatabase()
   const bucket = await getAssetsBucket()
-  const { exposures, language } = await getSettingsBody(client)
 
-  await updateIfChanged(s3, bucket, 'exposures.json', exposures)
-  await updateIfChanged(s3, bucket, 'language.json', language)
-  await updateIfChanged(s3, bucket, 'settings.json', {
-    ...exposures,
-    ...language
+  return await withDatabase(async client => {
+    const { exposures, language } = await getSettingsBody(client)
+
+    await updateIfChanged(s3, bucket, 'exposures.json', exposures)
+    await updateIfChanged(s3, bucket, 'language.json', language)
+    await updateIfChanged(s3, bucket, 'settings.json', {
+      ...exposures,
+      ...language
+    })
+
+    return { exposures, language }
   })
-
-  return { exposures, language }
 }
 
 runIfDev(exports.handler)

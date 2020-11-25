@@ -1,6 +1,6 @@
 const SQL = require('@nearform/sql')
 const {
-  getDatabase,
+  withDatabase,
   getExpiryConfig,
   getTimeZone,
   runIfDev
@@ -67,17 +67,18 @@ async function removeOldNoticesKeys(client, noticeLifetime) {
 }
 
 exports.handler = async function() {
-  const client = await getDatabase()
   const {
     codeLifetime,
     tokenLifetime,
     noticeLifetime
   } = await getExpiryConfig()
 
-  await createRegistrationMetrics(client)
-  await removeExpiredCodes(client, codeLifetime)
-  await removeExpiredTokens(client, tokenLifetime)
-  await removeOldNoticesKeys(client, noticeLifetime)
+  await withDatabase(async client => {
+    await createRegistrationMetrics(client)
+    await removeExpiredCodes(client, codeLifetime)
+    await removeExpiredTokens(client, tokenLifetime)
+    await removeOldNoticesKeys(client, noticeLifetime)
+  })
 
   return true
 }

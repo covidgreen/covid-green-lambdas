@@ -3,6 +3,7 @@ const SQL = require('@nearform/sql')
 const fetch = require('node-fetch')
 const jwt = require('jsonwebtoken')
 const pg = require('pg')
+require('pg-range').install(pg)
 
 const isProduction = /^\s*production\s*$/i.test(process.env.NODE_ENV)
 const ssm = new AWS.SSM({ region: process.env.AWS_REGION })
@@ -60,74 +61,74 @@ async function getExpiryConfig() {
   }
 }
 
-async function getDatabase() {
-  require('pg-range').install(pg)
+async function getProdDbConfig() {
+  const [
+    { username: user, password },
+    host,
+    port,
+    ssl,
+    database
+  ] = await Promise.all([
+    getSecret('rds-read-write'),
+    getParameter('db_host'),
+    getParameter('db_port'),
+    getParameter('db_ssl'),
+    getParameter('db_database')
+  ])
 
-  let client
-
-  if (isProduction) {
-    const [
-      { username: user, password },
-      host,
-      port,
-      ssl,
-      database
-    ] = await Promise.all([
-      getSecret('rds-read-write'),
-      getParameter('db_host'),
-      getParameter('db_port'),
-      getParameter('db_ssl'),
-      getParameter('db_database')
-    ])
-
-    const options = {
-      host,
-      database,
-      user,
-      password,
-      port: Number(port)
-    }
-
-    if (/true/i.test(ssl)) {
-      const certResponse = await fetch(
-        'https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem'
-      )
-      const certBody = await certResponse.text()
-
-      options.ssl = {
-        ca: [certBody],
-        rejectUnauthorized: true
-      }
-    } else {
-      options.ssl = false
-    }
-
-    client = new pg.Client(options)
-  } else {
-    const { user, password, host, port, ssl, database } = {
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT),
-      ssl: /true/i.test(process.env.DB_SSL)
-        ? { rejectUnauthorized: false }
-        : false,
-      database: process.env.DB_DATABASE
-    }
-
-    client = new pg.Client({
-      host,
-      database,
-      user,
-      password,
-      port: Number(port),
-      ssl
-    })
+  const options = {
+    host,
+    database,
+    user,
+    password,
+    port: Number(port)
   }
+
+  if (/true/i.test(ssl)) {
+    const certResponse = await fetch(
+      'https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem'
+    )
+    const certBody = await certResponse.text()
+
+    options.ssl = {
+      ca: [certBody],
+      rejectUnauthorized: true
+    }
+  } else {
+    options.ssl = false
+  }
+
+  return options
+}
+
+function getDevDbConfig() {
+  return {
+    host: process.env.DB_HOST,
+    database: process.env.DB_DATABASE,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    port: Number(process.env.DB_PORT),
+    ssl: /true/i.test(process.env.DB_SSL)
+      ? { rejectUnauthorized: false }
+      : false
+  }
+}
+
+async function getDbConfig() {
+  return isProduction ? getProdDbConfig() : getDevDbConfig()
+}
+
+async function withDatabase(fn) {
+  const options = await getDbConfig()
+  const client = new pg.Client(options)
 
   await client.connect()
 
-  return client
+  try {
+    return await fn(client)
+  } finally {
+    await client.end()
+  }
 }
 
 async function getExposuresConfig() {
@@ -262,8 +263,8 @@ function runIfDev(fn) {
 }
 
 module.exports = {
+  withDatabase,
   getAssetsBucket,
-  getDatabase,
   getExpiryConfig,
   getExposuresConfig,
   getInteropConfig,
