@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk')
 const archiver = require('archiver')
 const crypto = require('crypto')
+const fs = require('fs')
 const protobuf = require('protobufjs')
 const SQL = require('@nearform/sql')
 const {
@@ -9,6 +10,7 @@ const {
   getExposuresConfig,
   runIfDev
 } = require('./utils')
+const { dirname } = require('path')
 
 async function clearExpiredFiles(client, s3, bucket, lastExposureId) {
   const query = SQL`
@@ -100,25 +102,30 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
       const now = new Date()
       const path = `exposures/${region.toLowerCase()}/${now.getTime()}.zip`
 
+      const data = await createExportFile(
+        privateKey,
+        signatureInfoPayload,
+        exposures,
+        region,
+        1,
+        1,
+        firstExposureCreatedAt,
+        lastExposureCreatedAt
+      )
+
       if (bucket) {
         const exportFileObject = {
           ACL: 'private',
-          Body: await createExportFile(
-            privateKey,
-            signatureInfoPayload,
-            exposures,
-            region,
-            1,
-            1,
-            firstExposureCreatedAt,
-            lastExposureCreatedAt
-          ),
+          Body: data,
           Bucket: bucket,
           ContentType: 'application/zip',
           Key: path
         }
 
         await s3.putObject(exportFileObject).promise()
+      } else {
+        fs.mkdirSync(dirname(`./out/${path}`), { recursive: true })
+        fs.writeFileSync(`./out/${path}`, data)
       }
 
       const query = SQL`
@@ -133,7 +140,15 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
 
 async function getExposures(client, since, config) {
   const query = SQL`
-    SELECT id, created_at, key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
+    SELECT
+      id,
+      created_at,
+      key_data,
+      rolling_period,
+      rolling_start_number,
+      transmission_risk_level,
+      regions,
+      days_since_onset
     FROM exposures
     WHERE id > ${since}
     ORDER BY key_data ASC
@@ -216,14 +231,17 @@ function createExportFile(
     const keys = exposures.map(
       ({
         key_data: keyData,
-        rolling_start_number: rollingStartNumber,
+        rolling_start_number: rollingStartIntervalNumber,
         transmission_risk_level: transmissionRiskLevel,
-        rolling_period: rollingPeriod
+        rolling_period: rollingPeriod,
+        days_since_onset: daysSinceOnsetOfSymptoms
       }) => ({
-        keyData: keyData,
-        rollingStartIntervalNumber: rollingStartNumber,
-        transmissionRiskLevel: transmissionRiskLevel,
-        rollingPeriod: rollingPeriod
+        keyData,
+        rollingStartIntervalNumber,
+        transmissionRiskLevel,
+        rollingPeriod,
+        reportType: 1,
+        daysSinceOnsetOfSymptoms
       })
     )
 
@@ -248,7 +266,8 @@ function createExportFile(
       batchNum,
       batchSize,
       signatureInfos: [signatureInfoPayload],
-      keys: filteredKeys
+      keys: filteredKeys,
+      revisedKeys: []
     }
 
     const tekExportMessage = tekExport.create(tekExportPayload)
