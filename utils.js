@@ -140,14 +140,12 @@ async function getExposuresConfig() {
         verificationKeyId,
         verificationKeyVersion
       },
-      appBundleId,
       defaultRegion,
       disableValidKeyCheck,
       nativeRegions,
       varianceOffsetMins
     ] = await Promise.all([
       getSecret('exposures'),
-      getParameter('app_bundle_id'),
       getParameter('default_region'),
       getParameter('disable_valid_key_check'),
       getParameter('native_regions'),
@@ -155,7 +153,6 @@ async function getExposuresConfig() {
     ])
 
     return {
-      appBundleId,
       defaultRegion,
       disableValidKeyCheck: /true/i.test(disableValidKeyCheck),
       nativeRegions: nativeRegions.split(','),
@@ -167,7 +164,6 @@ async function getExposuresConfig() {
     }
   } else {
     return {
-      appBundleId: process.env.APP_BUNDLE_ID,
       defaultRegion: process.env.EXPOSURES_DEFAULT_REGION,
       disableValidKeyCheck: /true/i.test(process.env.DISABLE_VALID_KEY_CHECK),
       nativeRegions: process.env.EXPOSURES_NATIVE_REGIONS.split(','),

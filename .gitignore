@@ -18,5 +18,5 @@ yarn.lock
 .env
 
 lambdas.zip
-
+out
 pdf-assets/*.pdf
