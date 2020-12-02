@@ -238,10 +238,10 @@ function createExportFile(
       }) => ({
         keyData,
         rollingStartIntervalNumber,
-        transmissionRiskLevel,
+        transmissionRiskLevel: transmissionRiskLevel > 8 || transmissionRiskLevel < 0 ? 0 : transmissionRiskLevel,
         rollingPeriod,
         reportType: 1,
-        daysSinceOnsetOfSymptoms
+        daysSinceOnsetOfSymptoms: Math.min(Math.max(daysSinceOnsetOfSymptoms, -14), 14)
       })
     )
 
