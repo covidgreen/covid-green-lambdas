@@ -19,6 +19,8 @@ async function createRegistrationMetrics(client) {
       COUNT(id)
     FROM registrations
     WHERE
+      (nonce != '123456' OR nonce IS NULL)
+    AND
       (created_at AT TIME ZONE ${timeZone})::DATE =
       (CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE
     ON CONFLICT ON CONSTRAINT metrics_pkey
