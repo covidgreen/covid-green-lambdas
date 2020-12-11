@@ -18,7 +18,7 @@ async function getVenueConfig(client, id) {
   return { thresholdCount, thresholdDuration }
 }
 
-async function getAlerts(client, date, thresholdCount, thresholdDuration) {
+async function getAlerts(client, id, date, thresholdCount, thresholdDuration) {
   const sql = SQL`
     WITH
       dates AS (
@@ -41,7 +41,8 @@ async function getAlerts(client, date, thresholdCount, thresholdDuration) {
           (
             SELECT COUNT(*)
             FROM venue_check_ins
-            WHERE created_at BETWEEN start_date AND end_date
+            WHERE checked_in_at BETWEEN start_date AND end_date
+            AND id = ${id}
           ) AS check_ins
         FROM ranges
       )
@@ -72,7 +73,7 @@ exports.handler = async function (event) {
       if (thresholdCount && thresholdDuration) {
         console.log(`checking for alerts for venue ${id} on ${date} (${thresholdCount} uploads in ${thresholdDuration} hours)`)
 
-        const alerts = await getAlerts(client, date, thresholdCount, thresholdDuration)
+        const alerts = await getAlerts(client, id, date, thresholdCount, thresholdDuration)
 
         if (alerts.length > 0) {
           console.log(`found ${alerts.length} periods exceeding threshold`)
