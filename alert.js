@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk')
 const SQL = require('@nearform/sql')
 const { createTransport } = require('nodemailer')
+const { format } = require('date-fns')
 const { getAlertConfig, withDatabase, runIfDev } = require('./utils')
 
 async function getVenueConfig(client, id) {
@@ -58,6 +59,8 @@ async function getAlerts(client, id, date, thresholdCount, thresholdDuration) {
   return rows
 }
 
+function format
+
 exports.handler = async function (event) {
   const ses = new AWS.SES({ region: process.env.AWS_REGION })
   const transport = createTransport({ SES: ses })
@@ -80,14 +83,14 @@ exports.handler = async function (event) {
           
           const venues = alerts
             .map(({ startDate, endDate, checkIns }) =>
-              `${startDate} to ${endDate} - ${checkIns} check-ins`
+              `${format(startDate, 'yyyy-MM-dd HH:mm')} to ${format(endDate, 'yyyy-MM-dd HH:mm')}: ${checkIns} check-ins`
             )
             .join('\n')
 
           await transport.sendMail({
             from: sender,
             subject: `Venue ${id} has triggered an alert`,
-            text: `Venue ${id} triggered an alerts: \n\n${venues}`,
+            text: `Venue ${id} triggered alerts: \n\n${venues}`,
             to: emailAddress
           })
         }
