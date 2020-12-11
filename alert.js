@@ -67,7 +67,7 @@ exports.handler = async function (event) {
   await withDatabase(async client => {
     for (const record of event.Records) {
       const { id, date } = JSON.parse(record.body)
-      const { thresholdCount, thresholdDuration } = await getVenueConfig(id)
+      const { thresholdCount, thresholdDuration } = await getVenueConfig(client, id)
 
       if (thresholdCount && thresholdDuration) {
         console.log(`checking for alerts for venue ${id} (${thresholdCount} uploads in ${thresholdDuration} hours)`)
