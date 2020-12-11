@@ -42,7 +42,7 @@ async function getAlerts(client, id, date, thresholdCount, thresholdDuration) {
             SELECT COUNT(*)
             FROM venue_check_ins
             WHERE checked_in_at BETWEEN start_date AND end_date
-            AND id = ${id}
+            AND venue_id = ${id}
           ) AS check_ins
         FROM ranges
       )
