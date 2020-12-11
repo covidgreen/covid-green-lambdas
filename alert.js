@@ -62,7 +62,7 @@ exports.handler = async function (event) {
 
   console.log(`processing ${event.Records.length} records`)
 
-  withDatabase(client => {
+  withDatabase(async client => {
     for (const record of event.Records) {
       const { id, date } = JSON.parse(record.body)
       const { thresholdCount, thresholdDuration } = await getVenueConfig(id)
