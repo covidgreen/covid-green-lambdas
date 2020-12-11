@@ -68,21 +68,28 @@ exports.handler = async function (event) {
     for (const record of event.Records) {
       const { id, date } = JSON.parse(record.body)
       const { thresholdCount, thresholdDuration } = await getVenueConfig(id)
-      const alerts = await getAlerts(client, date, thresholdCount, thresholdDuration)
 
-      if (alerts.length > 0) {
-        const venues = alerts
-          .map(({ startDate, endDate, checkIns }) =>
-            `${startDate} to ${endDate} - ${checkIns} check-ins`
-          )
-          .join('\n')
+      if (thresholdCount && thresholdDuration) {
+        console.log(`checking for alerts for venue ${id} (${thresholdCount} uploads in ${thresholdDuration} hours)`)
 
-        await transport.sendMail({
-          from: sender,
-          subject: `Venue ${id} has triggered an alert`,
-          text: `Venue ${id} triggered an alerts: \n\n${venues}`,
-          to: emailAddress
-        })
+        const alerts = await getAlerts(client, date, thresholdCount, thresholdDuration)
+
+        if (alerts.length > 0) {
+          console.log(`found ${alerts.length} periods exceeding threshold`)
+          
+          const venues = alerts
+            .map(({ startDate, endDate, checkIns }) =>
+              `${startDate} to ${endDate} - ${checkIns} check-ins`
+            )
+            .join('\n')
+
+          await transport.sendMail({
+            from: sender,
+            subject: `Venue ${id} has triggered an alert`,
+            text: `Venue ${id} triggered an alerts: \n\n${venues}`,
+            to: emailAddress
+          })
+        }
       }
     }
   })
