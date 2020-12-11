@@ -1,4 +1,6 @@
+const AWS = require('aws-sdk')
 const SQL = require('@nearform/sql')
+const { createTransport } = require('nodemailer')
 const { getAlertConfig, withDatabase, runIfDev } = require('./utils')
 
 async function getVenueConfig(client, id) {
