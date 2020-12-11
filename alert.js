@@ -23,7 +23,7 @@ async function getAlerts(client, date, thresholdCount, thresholdDuration) {
     WITH
       dates AS (
         SELECT GENERATE_SERIES(
-          ${date} - ${`${thresholdDuration} hours`}::INTERVAL,
+          ${date}::TIMESTAMPTZ - ${`${thresholdDuration} hours`}::INTERVAL,
           ${date}::TIMESTAMPTZ,
           '1 hours'::INTERVAL
         ) AS start_date
@@ -70,7 +70,7 @@ exports.handler = async function (event) {
       const { thresholdCount, thresholdDuration } = await getVenueConfig(client, id)
 
       if (thresholdCount && thresholdDuration) {
-        console.log(`checking for alerts for venue ${id} (${thresholdCount} uploads in ${thresholdDuration} hours)`)
+        console.log(`checking for alerts for venue ${id} on ${date} (${thresholdCount} uploads in ${thresholdDuration} hours)`)
 
         const alerts = await getAlerts(client, date, thresholdCount, thresholdDuration)
 
