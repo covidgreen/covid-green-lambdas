@@ -29,6 +29,15 @@ jobs:
         ORG: managed
         BUILD: 0.0.1
 
+    - name: Deploy alert
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
+        aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
+        aws_region: eu-west-1
+        function_name: dev-nfcs-qr-alert
+        zip_file: lambdas.zip
+
     - name: Deploy authorizer
       uses: appleboy/lambda-action@master
       with:
@@ -69,7 +78,7 @@ jobs:
         aws_access_key_id: ${{ secrets.NFCS_DEV_KEY }}
         aws_secret_access_key: ${{ secrets.NFCS_DEV_SECRET }}
         aws_region: eu-west-1
-        function_name: dev-nfcs-qr
+        function_name: dev-nfcs-qr-generate
         zip_file: lambdas.zip
 
     - name: Deploy settings
