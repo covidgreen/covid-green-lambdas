@@ -59,8 +59,6 @@ async function getAlerts(client, id, date, thresholdCount, thresholdDuration) {
   return rows
 }
 
-function format
-
 exports.handler = async function (event) {
   const ses = new AWS.SES({ region: process.env.AWS_REGION })
   const transport = createTransport({ SES: ses })
