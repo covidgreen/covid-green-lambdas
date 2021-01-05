@@ -53,14 +53,7 @@ async function clearExpiredExposures(client, s3, bucket) {
   )
 }
 
-async function uploadFile(
-  firstExposureId,
-  client,
-  s3,
-  bucket,
-  config,
-  endDate
-) {
+async function uploadFile(firstExposureId, client, s3, bucket, config) {
   const {
     defaultRegion,
     nativeRegions,
@@ -68,20 +61,17 @@ async function uploadFile(
     ...signatureInfoPayload
   } = config
   const results = {}
-  const exposures = await getExposures(client, firstExposureId, config, endDate)
+  const exposures = await getExposures(client, firstExposureId, config)
 
   let firstExposureCreatedAt = null
   let lastExposureCreatedAt = null
-  let lastExposureId = 0
-  let startExposureId = 0
+  let lastExposureId = firstExposureId
 
   for (const { id, created_at: createdAt, regions, ...exposure } of exposures) {
     if (id > lastExposureId) {
       lastExposureId = id
     }
-    if (id < startExposureId || startExposureId === 0) {
-      startExposureId = id
-    }
+
     if (firstExposureCreatedAt === null || createdAt < firstExposureCreatedAt) {
       firstExposureCreatedAt = createdAt
     }
@@ -99,14 +89,14 @@ async function uploadFile(
 
   for (const [region, exposures] of Object.entries(results)) {
     if (
-      await exposureFileExists(client, startExposureId, lastExposureId, region)
+      await exposureFileExists(client, firstExposureId, lastExposureId, region)
     ) {
       console.log(
-        `file for ${region} exposures ${startExposureId} to ${lastExposureId} already exists`
+        `file for ${region} exposures ${firstExposureId} to ${lastExposureId} already exists`
       )
     } else {
       console.log(
-        `generating file for ${region} exposures ${startExposureId} to ${lastExposureId}`
+        `generating file for ${region} exposures ${firstExposureId} to ${lastExposureId}`
       )
 
       const now = new Date()
@@ -140,7 +130,7 @@ async function uploadFile(
 
       const query = SQL`
         INSERT INTO exposure_export_files (path, exposure_count, since_exposure_id, last_exposure_id, first_exposure_created_at, region)
-        VALUES (${path}, ${exposures.length}, ${startExposureId}, ${lastExposureId}, ${firstExposureCreatedAt}, ${region})
+        VALUES (${path}, ${exposures.length}, ${firstExposureId}, ${lastExposureId}, ${firstExposureCreatedAt}, ${region})
       `
 
       await client.query(query)
@@ -148,11 +138,7 @@ async function uploadFile(
   }
 }
 
-function formatDate(date) {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
-}
-
-async function getExposures(client, since, config, endDate) {
+async function getExposures(client, since, config) {
   const query = SQL`
     SELECT
       id,
@@ -164,13 +150,9 @@ async function getExposures(client, since, config, endDate) {
       regions,
       days_since_onset
     FROM exposures
-    WHERE id > ${since} 
+    WHERE id > ${since}
+    ORDER BY key_data ASC
   `
-
-  if (endDate) {
-    query.append(SQL` AND created_at < ${formatDate(endDate)}`)
-  }
-  query.append(SQL` ORDER BY key_data ASC`)
 
   const { rows } = await client.query(query)
   const exposures = []
@@ -256,16 +238,10 @@ function createExportFile(
       }) => ({
         keyData,
         rollingStartIntervalNumber,
-        transmissionRiskLevel:
-          transmissionRiskLevel > 8 || transmissionRiskLevel < 0
-            ? 0
-            : transmissionRiskLevel,
+        transmissionRiskLevel: transmissionRiskLevel > 8 || transmissionRiskLevel < 0 ? 0 : transmissionRiskLevel,
         rollingPeriod,
         reportType: 1,
-        daysSinceOnsetOfSymptoms: Math.min(
-          Math.max(daysSinceOnsetOfSymptoms, -14),
-          14
-        )
+        daysSinceOnsetOfSymptoms: Math.min(Math.max(daysSinceOnsetOfSymptoms, -14), 14)
       })
     )
 
@@ -361,61 +337,36 @@ async function exposureFileExists(
   return rowCount > 0
 }
 
-async function uploadExposuresSince(
-  client,
-  s3,
-  bucket,
-  config,
-  since,
-  endDate
-) {
+async function uploadExposuresSince(client, s3, bucket, config, since) {
   const query = SQL`
     SELECT COALESCE(MAX(last_exposure_id), 0) AS "firstExposureId"
     FROM exposure_export_files
     WHERE created_at < ${since}
-    `
+  `
 
   const { rows } = await client.query(query)
   const [{ firstExposureId }] = rows
 
-  let startId = firstExposureId
-
-  if (firstExposureId === 0) {
-    const query = SQL`
-      SELECT COALESCE(MIN(id), 0) AS "firstExposureId"
-      FROM exposures
-      WHERE created_at >= ${formatDate(since)}
-      `
-    const { rows } = await client.query(query)
-    const [{ firstExposureId }] = rows
-    startId = firstExposureId
-  }
-  await uploadFile(startId, client, s3, bucket, config, endDate)
+  await uploadFile(firstExposureId, client, s3, bucket, config)
 }
 
 exports.handler = async function() {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const bucket = await getAssetsBucket()
   const config = await getExposuresConfig()
-  const startDate = new Date()
-  startDate.setHours(0, 0, 0, 0)
-  startDate.setDate(startDate.getDate() - 14)
-
-  const endDate = new Date(startDate)
-  endDate.setDate(endDate.getDate() + 1)
+  const date = new Date()
 
   await withDatabase(async client => {
-    await clearExpiredExposures(client, s3, bucket)
+    await uploadExposuresSince(client, s3, bucket, config, date)
+
+    date.setHours(0, 0, 0, 0)
 
     for (let i = 0; i < 14; i++) {
-      console.log('Creating export file for ', startDate, endDate)
-      await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
-      startDate.setDate(startDate.getDate() + 1)
-      endDate.setDate(endDate.getDate() + 1)
+      await uploadExposuresSince(client, s3, bucket, config, date)
+      date.setDate(date.getDate() - 1)
     }
 
-    console.log('Creating final export file for ', new Date())
-    await uploadExposuresSince(client, s3, bucket, config, new Date())
+    await clearExpiredExposures(client, s3, bucket)
   })
 
   return true
