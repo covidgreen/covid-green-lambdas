@@ -370,26 +370,6 @@ async function uploadExposuresSince(
   await uploadFile(startId, client, s3, bucket, config, endDate)
 }
 
-async function uploadDailyExposures(
-  client,
-  s3,
-  bucket,
-  config,
-  startDate,
-  endDate
-) {
-  const query = SQL`
-    SELECT COALESCE(MAX(id), 0) AS "firstExposureId"
-    FROM exposures
-    WHERE created_at >= ${formatDate(startDate)}
-  `
-
-  const { rows } = await client.query(query)
-  const [{ firstExposureId }] = rows
-
-  await uploadFile(firstExposureId, client, s3, bucket, config, endDate)
-}
-
 exports.handler = async function() {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const bucket = await getAssetsBucket()
@@ -404,7 +384,8 @@ exports.handler = async function() {
 
   await withDatabase(async client => {
     for (let i = 0; i < 14; i++) {
-      await uploadDailyExposures(client, s3, bucket, config, startDate, endDate)
+      console.log()
+      await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
       startDate.setDate(startDate.getDate() + 1)
       endDate.setDate(startDate.getDate() + 1)
     }
