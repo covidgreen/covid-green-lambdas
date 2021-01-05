@@ -72,13 +72,16 @@ async function uploadFile(
 
   let firstExposureCreatedAt = null
   let lastExposureCreatedAt = null
-  let lastExposureId = firstExposureId
+  let lastExposureId = 0
+  let startExposureId = 0
 
   for (const { id, created_at: createdAt, regions, ...exposure } of exposures) {
     if (id > lastExposureId) {
       lastExposureId = id
     }
-
+    if (id < startExposureId || startExposureId === 0) {
+      startExposureId = id
+    }
     if (firstExposureCreatedAt === null || createdAt < firstExposureCreatedAt) {
       firstExposureCreatedAt = createdAt
     }
@@ -96,14 +99,14 @@ async function uploadFile(
 
   for (const [region, exposures] of Object.entries(results)) {
     if (
-      await exposureFileExists(client, firstExposureId, lastExposureId, region)
+      await exposureFileExists(client, startExposureId, lastExposureId, region)
     ) {
       console.log(
-        `file for ${region} exposures ${firstExposureId} to ${lastExposureId} already exists`
+        `file for ${region} exposures ${startExposureId} to ${lastExposureId} already exists`
       )
     } else {
       console.log(
-        `generating file for ${region} exposures ${firstExposureId} to ${lastExposureId}`
+        `generating file for ${region} exposures ${startExposureId} to ${lastExposureId}`
       )
 
       const now = new Date()
@@ -137,7 +140,7 @@ async function uploadFile(
 
       const query = SQL`
         INSERT INTO exposure_export_files (path, exposure_count, since_exposure_id, last_exposure_id, first_exposure_created_at, region)
-        VALUES (${path}, ${exposures.length}, ${firstExposureId}, ${lastExposureId}, ${firstExposureCreatedAt}, ${region})
+        VALUES (${path}, ${exposures.length}, ${startExposureId}, ${lastExposureId}, ${firstExposureCreatedAt}, ${region})
       `
 
       await client.query(query)
@@ -253,10 +256,16 @@ function createExportFile(
       }) => ({
         keyData,
         rollingStartIntervalNumber,
-        transmissionRiskLevel: transmissionRiskLevel > 8 || transmissionRiskLevel < 0 ? 0 : transmissionRiskLevel,
+        transmissionRiskLevel:
+          transmissionRiskLevel > 8 || transmissionRiskLevel < 0
+            ? 0
+            : transmissionRiskLevel,
         rollingPeriod,
         reportType: 1,
-        daysSinceOnsetOfSymptoms: Math.min(Math.max(daysSinceOnsetOfSymptoms, -14), 14)
+        daysSinceOnsetOfSymptoms: Math.min(
+          Math.max(daysSinceOnsetOfSymptoms, -14),
+          14
+        )
       })
     )
 
@@ -407,7 +416,6 @@ exports.handler = async function() {
 
     console.log('Creating final export file for ', new Date())
     await uploadExposuresSince(client, s3, bucket, config, new Date())
-
   })
 
   return true
