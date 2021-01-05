@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk')
 const archiver = require('archiver')
 const crypto = require('crypto')
+const fs = require('fs')
 const protobuf = require('protobufjs')
 const SQL = require('@nearform/sql')
 const {
@@ -9,6 +10,7 @@ const {
   getExposuresConfig,
   runIfDev
 } = require('./utils')
+const { dirname } = require('path')
 
 async function clearExpiredFiles(client, s3, bucket, lastExposureId) {
   const query = SQL`
@@ -85,18 +87,11 @@ async function uploadFile(
       lastExposureCreatedAt = createdAt
     }
 
-    for (const region of regions) {
-      const resolvedRegion =
-        nativeRegions.includes('*') || nativeRegions.includes(region)
-          ? defaultRegion
-          : region
-
-      if (results[resolvedRegion] === undefined) {
-        results[resolvedRegion] = []
-      }
-
-      results[resolvedRegion].push(exposure)
+    if (results[defaultRegion] === undefined) {
+      results[defaultRegion] = []
     }
+
+    results[defaultRegion].push(exposure)
   }
 
   for (const [region, exposures] of Object.entries(results)) {
@@ -114,24 +109,31 @@ async function uploadFile(
       const now = new Date()
       const path = `exposures/${region.toLowerCase()}/${now.getTime()}.zip`
 
-      const exportFileObject = {
-        ACL: 'private',
-        Body: await createExportFile(
-          privateKey,
-          signatureInfoPayload,
-          exposures,
-          region,
-          1,
-          1,
-          firstExposureCreatedAt,
-          lastExposureCreatedAt
-        ),
-        Bucket: bucket,
-        ContentType: 'application/zip',
-        Key: path
-      }
+      const data = await createExportFile(
+        privateKey,
+        signatureInfoPayload,
+        exposures,
+        region,
+        1,
+        1,
+        firstExposureCreatedAt,
+        lastExposureCreatedAt
+      )
 
-      await s3.putObject(exportFileObject).promise()
+      if (bucket) {
+        const exportFileObject = {
+          ACL: 'private',
+          Body: data,
+          Bucket: bucket,
+          ContentType: 'application/zip',
+          Key: path
+        }
+
+        await s3.putObject(exportFileObject).promise()
+      } else {
+        fs.mkdirSync(dirname(`./out/${path}`), { recursive: true })
+        fs.writeFileSync(`./out/${path}`, data)
+      }
 
       const query = SQL`
         INSERT INTO exposure_export_files (path, exposure_count, since_exposure_id, last_exposure_id, first_exposure_created_at, region)
@@ -149,7 +151,15 @@ function formatDate(date) {
 
 async function getExposures(client, since, config, endDate) {
   const query = SQL`
-    SELECT id, created_at, key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
+    SELECT
+      id,
+      created_at,
+      key_data,
+      rolling_period,
+      rolling_start_number,
+      transmission_risk_level,
+      regions,
+      days_since_onset
     FROM exposures
     WHERE id > ${since} 
   `
@@ -236,14 +246,23 @@ function createExportFile(
     const keys = exposures.map(
       ({
         key_data: keyData,
-        rolling_start_number: rollingStartNumber,
+        rolling_start_number: rollingStartIntervalNumber,
         transmission_risk_level: transmissionRiskLevel,
-        rolling_period: rollingPeriod
+        rolling_period: rollingPeriod,
+        days_since_onset: daysSinceOnsetOfSymptoms
       }) => ({
-        keyData: keyData,
-        rollingStartIntervalNumber: rollingStartNumber,
-        transmissionRiskLevel: transmissionRiskLevel,
-        rollingPeriod: rollingPeriod
+        keyData,
+        rollingStartIntervalNumber,
+        transmissionRiskLevel:
+          transmissionRiskLevel > 8 || transmissionRiskLevel < 0
+            ? 0
+            : transmissionRiskLevel,
+        rollingPeriod,
+        reportType: 1,
+        daysSinceOnsetOfSymptoms: Math.min(
+          Math.max(daysSinceOnsetOfSymptoms, -14),
+          14
+        )
       })
     )
 
@@ -268,7 +287,8 @@ function createExportFile(
       batchNum,
       batchSize,
       signatureInfos: [signatureInfoPayload],
-      keys: filteredKeys
+      keys: filteredKeys,
+      revisedKeys: []
     }
 
     const tekExportMessage = tekExport.create(tekExportPayload)
@@ -375,24 +395,24 @@ exports.handler = async function() {
   const bucket = await getAssetsBucket()
   const config = await getExposuresConfig()
   const startDate = new Date()
-  const endDate = new Date()
   startDate.setHours(0, 0, 0, 0)
   startDate.setDate(startDate.getDate() - 14)
 
-  endDate.setHours(0, 0, 0, 0)
-  endDate.setDate(startDate.getDate() + 1)
+  const endDate = new Date(startDate)
+  endDate.setDate(endDate.getDate() + 1)
 
   await withDatabase(async client => {
+    await clearExpiredExposures(client, s3, bucket)
+
     for (let i = 0; i < 14; i++) {
-      console.log()
+      console.log('Creating export file for ', startDate, endDate)
       await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
       startDate.setDate(startDate.getDate() + 1)
-      endDate.setDate(startDate.getDate() + 1)
+      endDate.setDate(endDate.getDate() + 1)
     }
 
+    console.log('Creating final export file for ', new Date())
     await uploadExposuresSince(client, s3, bucket, config, new Date())
-
-    await clearExpiredExposures(client, s3, bucket)
   })
 
   return true
