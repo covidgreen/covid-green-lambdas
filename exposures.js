@@ -51,7 +51,14 @@ async function clearExpiredExposures(client, s3, bucket) {
   )
 }
 
-async function uploadFile(firstExposureId, client, s3, bucket, config, endDate) {
+async function uploadFile(
+  firstExposureId,
+  client,
+  s3,
+  bucket,
+  config,
+  endDate
+) {
   const {
     defaultRegion,
     nativeRegions,
@@ -331,7 +338,14 @@ async function exposureFileExists(
   return rowCount > 0
 }
 
-async function uploadExposuresSince(client, s3, bucket, config, since, endDate) {
+async function uploadExposuresSince(
+  client,
+  s3,
+  bucket,
+  config,
+  since,
+  endDate
+) {
   const query = SQL`
     SELECT COALESCE(MAX(last_exposure_id), 0) AS "firstExposureId"
     FROM exposure_export_files
@@ -351,7 +365,7 @@ exports.handler = async function() {
   const startDate = new Date()
   const endDate = new Date()
   endDate.setHours(0, 0, 0, 0)
-  endDate.setDate(endDate.getDate()+1);
+  endDate.setDate(endDate.getDate() + 1)
 
   await withDatabase(async client => {
     await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
