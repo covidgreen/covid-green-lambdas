@@ -350,6 +350,38 @@ async function uploadExposuresSince(
     SELECT COALESCE(MAX(last_exposure_id), 0) AS "firstExposureId"
     FROM exposure_export_files
     WHERE created_at < ${since}
+    `
+
+  const { rows } = await client.query(query)
+  const [{ firstExposureId }] = rows
+
+  let startId = firstExposureId
+
+  if (firstExposureId === 0) {
+    const query = SQL`
+      SELECT COALESCE(MIN(id), 0) AS "firstExposureId"
+      FROM exposures
+      WHERE created_at >= ${formatDate(since)}
+      `
+    const { rows } = await client.query(query)
+    const [{ firstExposureId }] = rows
+    startId = firstExposureId
+  }
+  await uploadFile(startId, client, s3, bucket, config, endDate)
+}
+
+async function uploadDailyExposures(
+  client,
+  s3,
+  bucket,
+  config,
+  startDate,
+  endDate
+) {
+  const query = SQL`
+    SELECT COALESCE(MAX(id), 0) AS "firstExposureId"
+    FROM exposures
+    WHERE created_at >= ${formatDate(startDate)}
   `
 
   const { rows } = await client.query(query)
@@ -364,19 +396,20 @@ exports.handler = async function() {
   const config = await getExposuresConfig()
   const startDate = new Date()
   const endDate = new Date()
+  startDate.setHours(0, 0, 0, 0)
+  startDate.setDate(startDate.getDate() - 14)
+
   endDate.setHours(0, 0, 0, 0)
-  endDate.setDate(endDate.getDate() + 1)
+  endDate.setDate(startDate.getDate() + 1)
 
   await withDatabase(async client => {
-    await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
-
-    startDate.setHours(0, 0, 0, 0)
-
     for (let i = 0; i < 14; i++) {
-      await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
-      startDate.setDate(startDate.getDate() - 1)
-      endDate.setDate(endDate.getDate() - 1)
+      await uploadDailyExposures(client, s3, bucket, config, startDate, endDate)
+      startDate.setDate(startDate.getDate() + 1)
+      endDate.setDate(startDate.getDate() + 1)
     }
+
+    await uploadExposuresSince(client, s3, bucket, config, new Date())
 
     await clearExpiredExposures(client, s3, bucket)
   })
