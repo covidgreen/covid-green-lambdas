@@ -397,16 +397,18 @@ exports.handler = async function() {
   endDate.setDate(startDate.getDate() + 1)
 
   await withDatabase(async client => {
+    await clearExpiredExposures(client, s3, bucket)
+
     for (let i = 0; i < 14; i++) {
-      console.log()
+      console.log('Creating export file for ', startDate, endDate)
       await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
       startDate.setDate(startDate.getDate() + 1)
       endDate.setDate(startDate.getDate() + 1)
     }
 
+    console.log('Creating final export file for ', new Date())
     await uploadExposuresSince(client, s3, bucket, config, new Date())
 
-    await clearExpiredExposures(client, s3, bucket)
   })
 
   return true
