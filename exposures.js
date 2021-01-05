@@ -51,7 +51,7 @@ async function clearExpiredExposures(client, s3, bucket) {
   )
 }
 
-async function uploadFile(firstExposureId, client, s3, bucket, config) {
+async function uploadFile(firstExposureId, client, s3, bucket, config, endDate) {
   const {
     defaultRegion,
     nativeRegions,
@@ -59,7 +59,7 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
     ...signatureInfoPayload
   } = config
   const results = {}
-  const exposures = await getExposures(client, firstExposureId, config)
+  const exposures = await getExposures(client, firstExposureId, config, endDate)
 
   let firstExposureCreatedAt = null
   let lastExposureCreatedAt = null
@@ -136,13 +136,21 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
   }
 }
 
-async function getExposures(client, since, config) {
+function formatDate(date) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+}
+
+async function getExposures(client, since, config, endDate) {
   const query = SQL`
     SELECT id, created_at, key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
     FROM exposures
-    WHERE id > ${since}
-    ORDER BY key_data ASC
+    WHERE id > ${since} 
   `
+
+  if (endDate) {
+    query.append(SQL` AND created_at < ${formatDate(endDate)}`)
+  }
+  query.append(SQL` ORDER BY key_data ASC`)
 
   const { rows } = await client.query(query)
   const exposures = []
@@ -323,7 +331,7 @@ async function exposureFileExists(
   return rowCount > 0
 }
 
-async function uploadExposuresSince(client, s3, bucket, config, since) {
+async function uploadExposuresSince(client, s3, bucket, config, since, endDate) {
   const query = SQL`
     SELECT COALESCE(MAX(last_exposure_id), 0) AS "firstExposureId"
     FROM exposure_export_files
@@ -333,23 +341,27 @@ async function uploadExposuresSince(client, s3, bucket, config, since) {
   const { rows } = await client.query(query)
   const [{ firstExposureId }] = rows
 
-  await uploadFile(firstExposureId, client, s3, bucket, config)
+  await uploadFile(firstExposureId, client, s3, bucket, config, endDate)
 }
 
 exports.handler = async function() {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const bucket = await getAssetsBucket()
   const config = await getExposuresConfig()
-  const date = new Date()
+  const startDate = new Date()
+  const endDate = new Date()
+  endDate.setHours(0, 0, 0, 0)
+  endDate.setDate(endDate.getDate()+1);
 
   await withDatabase(async client => {
-    await uploadExposuresSince(client, s3, bucket, config, date)
+    await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
 
-    date.setHours(0, 0, 0, 0)
+    startDate.setHours(0, 0, 0, 0)
 
     for (let i = 0; i < 14; i++) {
-      await uploadExposuresSince(client, s3, bucket, config, date)
-      date.setDate(date.getDate() - 1)
+      await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
+      startDate.setDate(startDate.getDate() - 1)
+      endDate.setDate(endDate.getDate() - 1)
     }
 
     await clearExpiredExposures(client, s3, bucket)
