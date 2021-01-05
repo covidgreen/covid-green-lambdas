@@ -389,12 +389,11 @@ exports.handler = async function() {
   const bucket = await getAssetsBucket()
   const config = await getExposuresConfig()
   const startDate = new Date()
-  const endDate = new Date()
   startDate.setHours(0, 0, 0, 0)
   startDate.setDate(startDate.getDate() - 14)
 
-  endDate.setHours(0, 0, 0, 0)
-  endDate.setDate(startDate.getDate() + 1)
+  const endDate = new Date(startDate)
+  endDate.setDate(endDate.getDate() + 1)
 
   await withDatabase(async client => {
     await clearExpiredExposures(client, s3, bucket)
@@ -403,7 +402,7 @@ exports.handler = async function() {
       console.log('Creating export file for ', startDate, endDate)
       await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
       startDate.setDate(startDate.getDate() + 1)
-      endDate.setDate(startDate.getDate() + 1)
+      endDate.setDate(endDate.getDate() + 1)
     }
 
     console.log('Creating final export file for ', new Date())
