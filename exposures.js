@@ -73,13 +73,13 @@ async function uploadFile(
   let firstExposureCreatedAt = null
   let lastExposureCreatedAt = null
   let lastExposureId = 0
-  let startExposureId = 0
+  let startExposureId = null
 
   for (const { id, created_at: createdAt, regions, ...exposure } of exposures) {
     if (id > lastExposureId) {
       lastExposureId = id
     }
-    if (id < startExposureId || startExposureId === 0) {
+    if (startExposureId === null || id < startExposureId) {
       startExposureId = id
     }
     if (firstExposureCreatedAt === null || createdAt < firstExposureCreatedAt) {
@@ -367,20 +367,25 @@ async function uploadExposuresSince(
   bucket,
   config,
   since,
-  endDate
+  endDate,
+  dateRangeOnly
 ) {
-  const query = SQL`
-    SELECT COALESCE(MAX(last_exposure_id), 0) AS "firstExposureId"
-    FROM exposure_export_files
-    WHERE created_at < ${since}
-    `
+  let startId = 0
 
-  const { rows } = await client.query(query)
-  const [{ firstExposureId }] = rows
+  if (!dateRangeOnly) {
+    const query = SQL`
+      SELECT COALESCE(MAX(last_exposure_id), 0) AS "firstExposureId"
+      FROM exposure_export_files
+      WHERE created_at < ${since}
+      `
 
-  let startId = firstExposureId
+    const { rows } = await client.query(query)
+    const [{ firstExposureId }] = rows
 
-  if (firstExposureId === 0) {
+    startId = firstExposureId
+  }
+
+  if (startId === 0) {
     const query = SQL`
       SELECT COALESCE(MIN(id), 0) AS "firstExposureId"
       FROM exposures
@@ -409,7 +414,7 @@ exports.handler = async function() {
 
     for (let i = 0; i < 14; i++) {
       console.log('Creating export file for ', startDate, endDate)
-      await uploadExposuresSince(client, s3, bucket, config, startDate, endDate)
+      await uploadExposuresSince(client, s3, bucket, config, startDate, endDate, true)
       startDate.setDate(startDate.getDate() + 1)
       endDate.setDate(endDate.getDate() + 1)
     }
