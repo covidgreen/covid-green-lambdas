@@ -99,15 +99,6 @@ jobs:
         function_name: qa-fight-together-upload
         zip_file: lambdas.zip
 
-    - name: Deploy cfexportfiles
-      uses: appleboy/lambda-action@master
-      with:
-        aws_access_key_id: ${{ secrets.CTI_QA_KEY }}
-        aws_secret_access_key: ${{ secrets.CTI_QA_SECRET }}
-        aws_region: eu-west-1
-        function_name: qa-fight-together-cfexportfiles
-        zip_file: lambdas.zip
-
 #  deploy-ni:
 #    name: Deploy to NI
 #    runs-on: ubuntu-latest
