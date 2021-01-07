@@ -414,7 +414,15 @@ exports.handler = async function() {
 
     for (let i = 0; i < 14; i++) {
       console.log('Creating export file for ', startDate, endDate)
-      await uploadExposuresSince(client, s3, bucket, config, startDate, endDate, true)
+      await uploadExposuresSince(
+        client,
+        s3,
+        bucket,
+        config,
+        startDate,
+        endDate,
+        true
+      )
       startDate.setDate(startDate.getDate() + 1)
       endDate.setDate(endDate.getDate() + 1)
     }
