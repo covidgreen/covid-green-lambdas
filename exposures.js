@@ -183,7 +183,7 @@ async function getExposures(client, since, config, endDate) {
 
     if (config.disableValidKeyCheck === false && endDate > new Date()) {
       console.log(
-        `re-inserting key ${row.id} for future processing as it is still valid until ${endDate}`
+        `re-inserting key ${row.id}, ${row.key_data} for future processing as it is still valid until ${endDate}`
       )
 
       await client.query(SQL`
@@ -412,6 +412,9 @@ exports.handler = async function() {
   await withDatabase(async client => {
     await clearExpiredExposures(client, s3, bucket)
 
+    console.log('Creating latest export file for ', new Date())
+    await uploadExposuresSince(client, s3, bucket, config, new Date())
+
     for (let i = 0; i < 14; i++) {
       console.log('Creating export file for ', startDate, endDate)
       await uploadExposuresSince(
@@ -426,9 +429,6 @@ exports.handler = async function() {
       startDate.setDate(startDate.getDate() + 1)
       endDate.setDate(endDate.getDate() + 1)
     }
-
-    console.log('Creating final export file for ', new Date())
-    await uploadExposuresSince(client, s3, bucket, config, new Date())
   })
 
   return true
