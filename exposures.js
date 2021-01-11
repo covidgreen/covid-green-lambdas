@@ -387,7 +387,7 @@ async function uploadExposuresSince(
 
   if (startId === 0) {
     const query = SQL`
-      SELECT COALESCE(MIN(id), 0) AS "firstExposureId"
+      SELECT COALESCE(MIN(id), 0) - 1 AS "firstExposureId"
       FROM exposures
       WHERE created_at >= ${formatDate(since)}
       `
