@@ -196,6 +196,7 @@ async function getInteropConfig() {
   if (isProduction) {
     const config = await getSecret('interop')
     config.origin = await getParameter('interop_origin', 'IE')
+    config.varianceOffsetMins = await getParameter('variance_offset_mins', 120)
     return config
   } else {
     return {
@@ -221,7 +222,8 @@ async function getInteropConfig() {
           url: process.env.INTEROP_URL
         }
       ],
-      origin: process.env.INTEROP_ORIGIN
+      origin: process.env.INTEROP_ORIGIN,
+      varianceOffsetMins: Number(process.env.VARIANCE_OFFSET_MINS)
     }
   }
 }
