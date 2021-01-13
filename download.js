@@ -197,8 +197,19 @@ async function downloadFromEfgs(client, config, event, interopOrigin) {
       if (result.data.keys) {
         const keys = []
 
-        for (const { keyData, rollingStartIntervalNumber, rollingPeriod, transmissionRiskLevel, origin, reportType, days_since_onset_of_symptoms } of result.data.keys) {
-          if (reportType === 'CONFIRMED_TEST' && Buffer.from(keyData, 'base64').length === 16) {
+        for (const {
+          keyData,
+          rollingStartIntervalNumber,
+          rollingPeriod,
+          transmissionRiskLevel,
+          origin,
+          reportType,
+          days_since_onset_of_symptoms: daysSinceOnsetOfSymptoms
+        } of result.data.keys) {
+          if (
+            reportType === 'CONFIRMED_TEST' &&
+            Buffer.from(keyData, 'base64').length === 16
+          ) {
             keys.push({
               keyData,
               rollingPeriod,
@@ -206,7 +217,7 @@ async function downloadFromEfgs(client, config, event, interopOrigin) {
               transmissionRiskLevel,
               regions: [origin],
               origin,
-              daysSinceOnset: days_since_onset_of_symptoms
+              daysSinceOnset: daysSinceOnsetOfSymptoms
             })
           }
         }
@@ -217,12 +228,17 @@ async function downloadFromEfgs(client, config, event, interopOrigin) {
           await insertExposures(client, keys)
         }
 
-        console.log(`inserted ${keys.length} keys from batch ${result.headers.batchtag}`)
+        console.log(
+          `inserted ${keys.length} keys from batch ${result.headers.batchtag}`
+        )
       } else {
         console.log(`batch ${batchTag} contained no keys, skipping`)
       }
 
-      if (result.headers.nextbatchtag && result.headers.nextbatchtag !== 'null') {
+      if (
+        result.headers.nextbatchtag &&
+        result.headers.nextbatchtag !== 'null'
+      ) {
         batchTag = result.headers.nextbatchtag
       } else {
         more = false

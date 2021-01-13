@@ -59,7 +59,7 @@ async function getAlerts(client, id, date, thresholdCount, thresholdDuration) {
   return rows
 }
 
-exports.handler = async function (event) {
+exports.handler = async function(event) {
   const ses = new AWS.SES({ region: process.env.AWS_REGION })
   const transport = createTransport({ SES: ses })
   const { emailAddress, sender } = await getAlertConfig()
@@ -69,19 +69,34 @@ exports.handler = async function (event) {
   await withDatabase(async client => {
     for (const record of event.Records) {
       const { id, date } = JSON.parse(record.body)
-      const { thresholdCount, thresholdDuration } = await getVenueConfig(client, id)
+      const { thresholdCount, thresholdDuration } = await getVenueConfig(
+        client,
+        id
+      )
 
       if (thresholdCount && thresholdDuration) {
-        console.log(`checking for alerts for venue ${id} on ${date} (${thresholdCount} uploads in ${thresholdDuration} hours)`)
+        console.log(
+          `checking for alerts for venue ${id} on ${date} (${thresholdCount} uploads in ${thresholdDuration} hours)`
+        )
 
-        const alerts = await getAlerts(client, id, date, thresholdCount, thresholdDuration)
+        const alerts = await getAlerts(
+          client,
+          id,
+          date,
+          thresholdCount,
+          thresholdDuration
+        )
 
         if (alerts.length > 0) {
           console.log(`found ${alerts.length} periods exceeding threshold`)
-          
+
           const venues = alerts
-            .map(({ startDate, endDate, checkIns }) =>
-              `${format(startDate, 'yyyy-MM-dd HH:mm')} to ${format(endDate, 'yyyy-MM-dd HH:mm')}: ${checkIns} check-ins`
+            .map(
+              ({ startDate, endDate, checkIns }) =>
+                `${format(startDate, 'yyyy-MM-dd HH:mm')} to ${format(
+                  endDate,
+                  'yyyy-MM-dd HH:mm'
+                )}: ${checkIns} check-ins`
             )
             .join('\n')
 
