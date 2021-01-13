@@ -196,7 +196,6 @@ async function getInteropConfig() {
   if (isProduction) {
     const config = await getSecret('interop')
     config.origin = await getParameter('interop_origin', '')
-    console.log('CONFIG IS', config)
     return config
   } else {
     return {
