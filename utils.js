@@ -195,7 +195,7 @@ async function getExposuresConfig() {
 async function getInteropConfig() {
   if (isProduction) {
     const config = await getSecret('interop')
-    config.origin = await getParameter('interop_origin', '')
+    config.origin = await getParameter('interop_origin', 'IE')
     return config
   } else {
     return {
