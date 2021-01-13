@@ -11,7 +11,6 @@
     "test:settings": "env-cmd -f .env node settings.js",
     "test:authorizer": "env-cmd -f .env node authorizer.js \"{ \\\"authorizationToken\\\": \\\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InNvbWVfaWQiLCJpYXQiOjE1OTc3MTU0NzF9.fk8-_-XrZulUvphLZuidsPeu4CDbS7jzlk9OZWw4yls\\\" }\"",
     "test:download": "env-cmd -f .env node download.js",
-    "test:cfexportfiles": "env-cmd -f .env node cfexportfiles.js",
     "test:upload": "env-cmd -f .env node upload.js",
     "test:token:metrics": "env-cmd -f .env node token.js \"{ \\\"type\\\": \\\"metrics\\\", \\\"description\\\": \\\"Manual token\\\" }\"",
     "test:token:push": "env-cmd -f .env node token.js \"{ \\\"type\\\": \\\"push\\\", \\\"description\\\": \\\"Manual token\\\" }\"",

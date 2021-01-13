@@ -135,7 +135,7 @@ async function uploadToInterop(client, id, privateKey, token, url) {
   }
 }
 
-async function uploadToEfgs(client, config) {
+async function uploadToEfgs(client, config, interopOrigin) {
   const { auth, sign, url } = config
 
   console.log(`beginning upload to ${url}`)
@@ -155,7 +155,7 @@ async function uploadToEfgs(client, config) {
           rollingPeriod: rolling_period,
           transmissionRiskLevel: transmission_risk_level,
           visitedCountries: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'],
-          origin: 'IE',
+          origin: interopOrigin,
           reportType: 'CONFIRMED_TEST',
           days_since_onset_of_symptoms: Math.min(Math.max(days_since_onset, 0), 14)
         })
@@ -294,7 +294,7 @@ async function uploadToEfgs(client, config) {
 }
 
 exports.handler = async function () {
-  const { efgs, servers } = await getInteropConfig()
+  const { efgs, servers, origin } = await getInteropConfig()
 
   await withDatabase(async client => {
     for (const { id, privateKey, token, url } of servers) {
@@ -302,7 +302,7 @@ exports.handler = async function () {
     }
 
     if (efgs && efgs.upload) {
-      await uploadToEfgs(client, efgs)
+      await uploadToEfgs(client, efgs, origin)
     }
   })
 }

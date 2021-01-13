@@ -7,7 +7,8 @@ const {
   getInteropConfig,
   insertMetric,
   runIfDev,
-  withDatabase
+  withDatabase,
+  getTimeZone
 } = require('./utils')
 
 async function getFirstBatchTag(client, serverId, date) {
@@ -145,7 +146,23 @@ async function downloadFromInterop(client, id, maxAge, token, url, event) {
   } while (more)
 }
 
-async function downloadFromEfgs(client, config, event) {
+async function updateMetrics(client, interopOrigin) {
+  const timeZone = await getTimeZone()
+  const query = SQL`INSERT INTO metrics (event, date, value, os, version) 
+      SELECT CONCAT('INTEROP_KEYS_DOWNLOADED_', COALESCE(origin, ${interopOrigin})),      
+      (CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE,
+      COUNT(*), '', '' FROM exposures 
+      WHERE created_at >= (CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE 
+      AND created_at < (CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE + 1
+      GROUP BY origin
+      ON CONFLICT ON CONSTRAINT metrics_pkey
+      DO UPDATE SET value = EXCLUDED.value 
+      WHERE metrics.date = EXCLUDED.date AND metrics.event = EXCLUDED.event
+  `
+  await client.query(query)
+}
+
+async function downloadFromEfgs(client, config, event, interopOrigin) {
   const { auth, url } = config
   const date = event.date ? new Date(event.date) : new Date()
 
@@ -219,10 +236,11 @@ async function downloadFromEfgs(client, config, event) {
       }
     }
   }
+  await updateMetrics(client, interopOrigin)
 }
 
 exports.handler = async function(event) {
-  const { efgs, servers } = await getInteropConfig()
+  const { efgs, servers, origin } = await getInteropConfig()
 
   await withDatabase(async client => {
     for (const { id, maxAge, token, url } of servers) {
@@ -230,7 +248,7 @@ exports.handler = async function(event) {
     }
 
     if (efgs && efgs.download) {
-      await downloadFromEfgs(client, efgs, event)
+      await downloadFromEfgs(client, efgs, event, origin)
     }
   })
 }
