@@ -221,7 +221,8 @@ async function getInteropConfig() {
           token: process.env.INTEROP_TOKEN,
           url: process.env.INTEROP_URL
         }
-      ]
+      ],
+      origin: process.env.INTEROP_ORIGIN
     }
   }
 }
