@@ -147,17 +147,56 @@ async function uploadToEfgs(client, config, interopOrigin) {
     const exposures = await getExposures(client, firstExposureId)
     const keysToUpload = []
 
-    for (const { days_since_onset, key_data, rolling_period, rolling_start_number, transmission_risk_level } of exposures) {
-      if (differenceInDays(new Date(), new Date(rolling_start_number * 1000 * 600)) < 14) {
+    for (const {
+      days_since_onset: daysSinceOnset,
+      key_data: keyData,
+      rolling_period: rollingPeriod,
+      rolling_start_number: rollingStartNumber,
+      transmission_risk_level: transmissionRiskLevel
+    } of exposures) {
+      if (
+        differenceInDays(
+          new Date(),
+          new Date(rollingStartNumber * 1000 * 600)
+        ) < 14
+      ) {
         keysToUpload.push({
-          keyData: key_data,
-          rollingStartIntervalNumber: rolling_start_number,
-          rollingPeriod: rolling_period,
-          transmissionRiskLevel: transmission_risk_level,
-          visitedCountries: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'],
+          keyData: keyData,
+          rollingStartIntervalNumber: rollingStartNumber,
+          rollingPeriod: rollingPeriod,
+          transmissionRiskLevel: transmissionRiskLevel,
+          visitedCountries: [
+            'AT',
+            'BE',
+            'BG',
+            'HR',
+            'CY',
+            'CZ',
+            'DK',
+            'EE',
+            'FI',
+            'FR',
+            'DE',
+            'GR',
+            'HU',
+            'IE',
+            'IT',
+            'LV',
+            'LT',
+            'LU',
+            'MT',
+            'NL',
+            'PL',
+            'PT',
+            'RO',
+            'SK',
+            'SI',
+            'ES',
+            'SE'
+          ],
           origin: interopOrigin,
           reportType: 'CONFIRMED_TEST',
-          days_since_onset_of_symptoms: Math.min(Math.max(days_since_onset, 0), 14)
+          daysSinceOnset: Math.min(Math.max(daysSinceOnset, 0), 14)
         })
       }
     }
@@ -191,47 +230,62 @@ async function uploadToEfgs(client, config, interopOrigin) {
           REVOKED: 5
         }
 
-        const dataToSign = keysToUpload.map(({ keyData, rollingStartIntervalNumber, rollingPeriod, transmissionRiskLevel, visitedCountries, origin, reportType, days_since_onset_of_symptoms }) => {
-          const rollingStartIntervalNumberBuffer = Buffer.alloc(4)
-          const rollingPeriodBuffer = Buffer.alloc(4)
-          const transmissionRiskLevelBuffer = Buffer.alloc(4)
-          const reportTypeBuffer = Buffer.alloc(4)
-          const daysSinceOnsetOfSymptomsBuffer = Buffer.alloc(4)
+        const dataToSign = keysToUpload.map(
+          ({
+            keyData,
+            rollingStartIntervalNumber,
+            rollingPeriod,
+            transmissionRiskLevel,
+            visitedCountries,
+            origin,
+            reportType,
+            daysSinceOnset
+          }) => {
+            const rollingStartIntervalNumberBuffer = Buffer.alloc(4)
+            const rollingPeriodBuffer = Buffer.alloc(4)
+            const transmissionRiskLevelBuffer = Buffer.alloc(4)
+            const reportTypeBuffer = Buffer.alloc(4)
+            const daysSinceOnsetOfSymptomsBuffer = Buffer.alloc(4)
 
-          let data = ''
+            let data = ''
 
-          rollingStartIntervalNumberBuffer.writeUInt32BE(rollingStartIntervalNumber)
-          rollingPeriodBuffer.writeUInt32BE(rollingPeriod)
-          transmissionRiskLevelBuffer.writeInt32BE(transmissionRiskLevel)
-          reportTypeBuffer.writeInt32BE(reportTypes[reportType] || 0)
-          daysSinceOnsetOfSymptomsBuffer.writeUInt32BE(days_since_onset_of_symptoms)
+            rollingStartIntervalNumberBuffer.writeUInt32BE(
+              rollingStartIntervalNumber
+            )
+            rollingPeriodBuffer.writeUInt32BE(rollingPeriod)
+            transmissionRiskLevelBuffer.writeInt32BE(transmissionRiskLevel)
+            reportTypeBuffer.writeInt32BE(reportTypes[reportType] || 0)
+            daysSinceOnsetOfSymptomsBuffer.writeUInt32BE(daysSinceOnset)
 
-          data += keyData
-          data += '.'
+            data += keyData
+            data += '.'
 
-          data += rollingStartIntervalNumberBuffer.toString('base64')
-          data += '.'
+            data += rollingStartIntervalNumberBuffer.toString('base64')
+            data += '.'
 
-          data += rollingPeriodBuffer.toString('base64')
-          data += '.'
+            data += rollingPeriodBuffer.toString('base64')
+            data += '.'
 
-          data += transmissionRiskLevelBuffer.toString('base64')
-          data += '.'
+            data += transmissionRiskLevelBuffer.toString('base64')
+            data += '.'
 
-          data += Buffer.from(visitedCountries.join(','), 'utf-8').toString('base64')
-          data += '.'
+            data += Buffer.from(visitedCountries.join(','), 'utf-8').toString(
+              'base64'
+            )
+            data += '.'
 
-          data += Buffer.from(origin, 'utf-8').toString('base64')
-          data += '.'
+            data += Buffer.from(origin, 'utf-8').toString('base64')
+            data += '.'
 
-          data += reportTypeBuffer.toString('base64')
-          data += '.'
+            data += reportTypeBuffer.toString('base64')
+            data += '.'
 
-          data += daysSinceOnsetOfSymptomsBuffer.toString('base64')
-          data += '.'
+            data += daysSinceOnsetOfSymptomsBuffer.toString('base64')
+            data += '.'
 
-          return data
-        })
+            return data
+          }
+        )
 
         const sortedDataToSign = dataToSign.sort((a, b) => {
           const encodedA = Buffer.from(a, 'utf-8').toString('base64')
@@ -249,18 +303,22 @@ async function uploadToEfgs(client, config, interopOrigin) {
         })
 
         const signed = jsrsasign.KJUR.asn1.cms.CMSUtil.newSignedData({
-          content: { hex: Buffer.from(sortedDataToSign.join(''), 'utf-8').toString('hex') },
+          content: {
+            hex: Buffer.from(sortedDataToSign.join(''), 'utf-8').toString('hex')
+          },
           certs: [sign.cert],
           detached: true,
-          signerInfos: [{
-            hashAlg: 'sha256',
-            sAttr: {
-              SigningTime: {}
-            },
-            signerCert: sign.cert,
-            sigAlg: 'SHA1withRSA',
-            signerPrvKey: sign.key
-          }]
+          signerInfos: [
+            {
+              hashAlg: 'sha256',
+              sAttr: {
+                SigningTime: {}
+              },
+              signerCert: sign.cert,
+              sigAlg: 'SHA1withRSA',
+              signerPrvKey: sign.key
+            }
+          ]
         })
 
         await axios.post(
@@ -270,7 +328,10 @@ async function uploadToEfgs(client, config, interopOrigin) {
             headers: {
               'Content-Type': 'application/json; version=1.0',
               batchTag,
-              batchSignature: Buffer.from(signed.getContentInfoEncodedHex(), 'hex').toString('base64')
+              batchSignature: Buffer.from(
+                signed.getContentInfoEncodedHex(),
+                'hex'
+              ).toString('base64')
             },
             httpsAgent
           }
@@ -278,9 +339,7 @@ async function uploadToEfgs(client, config, interopOrigin) {
 
         await client.query('COMMIT')
 
-        console.log(
-          `uploaded ${keysToUpload.length} to batch ${batchTag}`
-        )
+        console.log(`uploaded ${keysToUpload.length} to batch ${batchTag}`)
       } catch (err) {
         if (err.response && err.response.data) {
           console.log(err.response.data)
@@ -293,7 +352,7 @@ async function uploadToEfgs(client, config, interopOrigin) {
   }
 }
 
-exports.handler = async function () {
+exports.handler = async function() {
   const { efgs, servers, origin } = await getInteropConfig()
 
   await withDatabase(async client => {
