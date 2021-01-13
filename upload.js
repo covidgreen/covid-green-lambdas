@@ -135,7 +135,7 @@ async function uploadToInterop(client, id, privateKey, token, url) {
   }
 }
 
-async function uploadToEfgs(client, config, interopOrigin) {
+async function uploadToEfgs(client, config, interopOrigin, varianceOffsetMins) {
   const { auth, sign, url } = config
 
   console.log(`beginning upload to ${url}`)
@@ -154,11 +154,17 @@ async function uploadToEfgs(client, config, interopOrigin) {
       rolling_start_number: rollingStartNumber,
       transmission_risk_level: transmissionRiskLevel
     } of exposures) {
+      const endDate = new Date(
+        (rollingStartNumber + rollingPeriod) * 1000 * 600 +
+          varianceOffsetMins * 1000 * 60
+      )
+
       if (
         differenceInDays(
           new Date(),
           new Date(rollingStartNumber * 1000 * 600)
-        ) < 14
+        ) < 14 &&
+        endDate > new Date()
       ) {
         keysToUpload.push({
           keyData: keyData,
@@ -353,7 +359,7 @@ async function uploadToEfgs(client, config, interopOrigin) {
 }
 
 exports.handler = async function() {
-  const { efgs, servers, origin } = await getInteropConfig()
+  const { efgs, servers, origin, varianceOffsetMins } = await getInteropConfig()
 
   await withDatabase(async client => {
     for (const { id, privateKey, token, url } of servers) {
@@ -361,7 +367,7 @@ exports.handler = async function() {
     }
 
     if (efgs && efgs.upload) {
-      await uploadToEfgs(client, efgs, origin)
+      await uploadToEfgs(client, efgs, origin, varianceOffsetMins)
     }
   })
 }
