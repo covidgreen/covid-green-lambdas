@@ -35,6 +35,22 @@ async function getSecret(id) {
   return JSON.parse(response.SecretString)
 }
 
+async function getAlertConfig() {
+  if (isProduction) {
+    const [emailAddress, sender] = await Promise.all([
+      getParameter('qr_alert_email'),
+      getParameter('qr_sender')
+    ])
+
+    return { emailAddress, sender }
+  } else {
+    return {
+      emailAddress: process.env.QR_ALERT_EMAIL,
+      sender: process.env.QR_SENDER
+    }
+  }
+}
+
 async function getAssetsBucket() {
   if (isProduction) {
     return await getParameter('s3_assets_bucket')
@@ -140,14 +156,12 @@ async function getExposuresConfig() {
         verificationKeyId,
         verificationKeyVersion
       },
-      appBundleId,
       defaultRegion,
       disableValidKeyCheck,
       nativeRegions,
       varianceOffsetMins
     ] = await Promise.all([
       getSecret('exposures'),
-      getParameter('app_bundle_id'),
       getParameter('default_region'),
       getParameter('disable_valid_key_check'),
       getParameter('native_regions'),
@@ -155,7 +169,6 @@ async function getExposuresConfig() {
     ])
 
     return {
-      appBundleId,
       defaultRegion,
       disableValidKeyCheck: /true/i.test(disableValidKeyCheck),
       nativeRegions: nativeRegions.split(','),
@@ -167,7 +180,6 @@ async function getExposuresConfig() {
     }
   } else {
     return {
-      appBundleId: process.env.APP_BUNDLE_ID,
       defaultRegion: process.env.EXPOSURES_DEFAULT_REGION,
       disableValidKeyCheck: /true/i.test(process.env.DISABLE_VALID_KEY_CHECK),
       nativeRegions: process.env.EXPOSURES_NATIVE_REGIONS.split(','),
@@ -182,9 +194,25 @@ async function getExposuresConfig() {
 
 async function getInteropConfig() {
   if (isProduction) {
-    return await getSecret('interop')
+    const config = await getSecret('interop')
+    config.origin = await getParameter('interop_origin', '')
+    console.log('CONFIG IS', config)
+    return config
   } else {
     return {
+      efgs: {
+        url: process.env.EFGS_URL,
+        download: /true/i.test(process.env.EFGS_DOWNLOAD),
+        upload: /true/i.test(process.env.EFGS_UPLOAD),
+        auth: {
+          cert: process.env.EFGS_AUTH_CERT,
+          key: process.env.EFGS_AUTH_KEY
+        },
+        sign: {
+          cert: process.env.EFGS_SIGN_CERT,
+          key: process.env.EFGS_SIGN_KEY
+        }
+      },
       servers: [
         {
           id: process.env.INTEROP_SERVER_ID,
@@ -248,6 +276,22 @@ function isAuthorized(token, secret) {
   }
 }
 
+async function getQrConfig() {
+  if (isProduction) {
+    const [appUrl, bucket, sender] = await Promise.all([
+      getParameter('qr_generate_url'),
+      getParameter('s3_qr_bucket')
+    ])
+
+    return { appUrl, bucket, sender }
+  } else {
+    return {
+      appUrl: process.env.QR_APP_URL,
+      bucket: process.env.QR_BUCKET_NAME
+    }
+  }
+}
+
 function runIfDev(fn) {
   if (!isProduction) {
     fn(JSON.parse(process.argv[2] || '{}'))
@@ -264,11 +308,13 @@ function runIfDev(fn) {
 
 module.exports = {
   withDatabase,
+  getAlertConfig,
   getAssetsBucket,
   getExpiryConfig,
   getExposuresConfig,
   getInteropConfig,
   getJwtSecret,
+  getQrConfig,
   getTimeZone,
   insertMetric,
   isAuthorized,
