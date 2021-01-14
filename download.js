@@ -225,7 +225,8 @@ async function downloadFromEfgs(client, config, event, interopOrigin) {
         await insertBatch(client, result.headers.batchtag, 'efgs')
 
         if (keys.length > 0) {
-          await insertExposures(client, keys)
+          const inserted = await insertExposures(client, keys)
+          await insertMetric(client, 'INTEROP_KEYS_DOWNLOADED', '', '', inserted)
         }
 
         console.log(
