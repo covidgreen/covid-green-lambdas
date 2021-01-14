@@ -226,7 +226,13 @@ async function downloadFromEfgs(client, config, event, interopOrigin) {
 
         if (keys.length > 0) {
           const inserted = await insertExposures(client, keys)
-          await insertMetric(client, 'INTEROP_KEYS_DOWNLOADED', '', '', inserted)
+          await insertMetric(
+            client,
+            'INTEROP_KEYS_DOWNLOADED',
+            '',
+            '',
+            inserted
+          )
         }
 
         console.log(
