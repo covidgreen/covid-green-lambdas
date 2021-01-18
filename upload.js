@@ -158,13 +158,14 @@ async function uploadToEfgs(client, config, interopOrigin, varianceOffsetMins) {
         (rollingStartNumber + rollingPeriod) * 1000 * 600 +
           varianceOffsetMins * 1000 * 60
       )
+      const now = new Date()
 
       if (
         differenceInDays(
           new Date(),
           new Date(rollingStartNumber * 1000 * 600)
         ) < 14 &&
-        endDate > new Date()
+        endDate < now
       ) {
         keysToUpload.push({
           keyData: keyData,
