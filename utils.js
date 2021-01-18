@@ -165,7 +165,7 @@ async function getExposuresConfig() {
       getParameter('default_region'),
       getParameter('disable_valid_key_check'),
       getParameter('native_regions'),
-      getParameter('variance_offset_mins',120)
+      getParameter('variance_offset_mins', 120)
     ])
 
     return {
@@ -196,7 +196,9 @@ async function getInteropConfig() {
   if (isProduction) {
     const config = await getSecret('interop')
     config.origin = await getParameter('interop_origin', 'IE')
-    config.varianceOffsetMins = Number(await getParameter('variance_offset_mins', 120))
+    config.varianceOffsetMins = Number(
+      await getParameter('variance_offset_mins', 120)
+    )
     return config
   } else {
     return {
