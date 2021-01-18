@@ -249,7 +249,7 @@ async function uploadToEfgs(client, config, interopOrigin, varianceOffsetMins) {
             visitedCountries,
             origin,
             reportType,
-            daysSinceOnset
+            days_since_onset_of_symptoms: daysSinceOnset
           }) => {
             const rollingStartIntervalNumberBuffer = Buffer.alloc(4)
             const rollingPeriodBuffer = Buffer.alloc(4)
