@@ -203,7 +203,10 @@ async function uploadToEfgs(client, config, interopOrigin, varianceOffsetMins) {
           ],
           origin: interopOrigin,
           reportType: 'CONFIRMED_TEST',
-          daysSinceOnset: Math.min(Math.max(daysSinceOnset, 0), 14)
+          days_since_onset_of_symptoms: Math.min(
+            Math.max(daysSinceOnset, 0),
+            14
+          )
         })
       }
     }
