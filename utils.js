@@ -35,22 +35,6 @@ async function getSecret(id) {
   return JSON.parse(response.SecretString)
 }
 
-async function getAlertConfig() {
-  if (isProduction) {
-    const [emailAddress, sender] = await Promise.all([
-      getParameter('qr_alert_email'),
-      getParameter('qr_sender')
-    ])
-
-    return { emailAddress, sender }
-  } else {
-    return {
-      emailAddress: process.env.QR_ALERT_EMAIL,
-      sender: process.env.QR_SENDER
-    }
-  }
-}
-
 async function getAssetsBucket() {
   if (isProduction) {
     return await getParameter('s3_assets_bucket')
@@ -280,22 +264,6 @@ function isAuthorized(token, secret) {
   }
 }
 
-async function getQrConfig() {
-  if (isProduction) {
-    const [appUrl, bucket, sender] = await Promise.all([
-      getParameter('qr_generate_url'),
-      getParameter('s3_qr_bucket')
-    ])
-
-    return { appUrl, bucket, sender }
-  } else {
-    return {
-      appUrl: process.env.QR_APP_URL,
-      bucket: process.env.QR_BUCKET_NAME
-    }
-  }
-}
-
 function runIfDev(fn) {
   if (!isProduction) {
     fn(JSON.parse(process.argv[2] || '{}'))
@@ -312,13 +280,11 @@ function runIfDev(fn) {
 
 module.exports = {
   withDatabase,
-  getAlertConfig,
   getAssetsBucket,
   getExpiryConfig,
   getExposuresConfig,
   getInteropConfig,
   getJwtSecret,
-  getQrConfig,
   getTimeZone,
   insertMetric,
   isAuthorized,
