@@ -3,7 +3,12 @@ const archiver = require('archiver')
 const crypto = require('crypto')
 const protobuf = require('protobufjs')
 const SQL = require('@nearform/sql')
-const { getAssetsBucket, getDatabase, getExposuresConfig, runIfDev } = require('./utils')
+const {
+  withDatabase,
+  getAssetsBucket,
+  getExposuresConfig,
+  runIfDev
+} = require('./utils')
 
 async function clearExpiredFiles(client, s3, bucket, lastExposureId) {
   const query = SQL`
@@ -32,39 +37,52 @@ async function clearExpiredFiles(client, s3, bucket, lastExposureId) {
 async function clearExpiredExposures(client, s3, bucket) {
   const query = SQL`
     DELETE FROM exposures
-    WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '14 days'
+    WHERE created_at < CURRENT_DATE - INTERVAL '14 days'
     RETURNING id
   `
 
   const { rows } = await client.query(query)
 
-  await clearExpiredFiles(client, s3, bucket, rows.reduce((max, { id }) => Math.max(max, id), 0))
+  await clearExpiredFiles(
+    client,
+    s3,
+    bucket,
+    rows.reduce((max, { id }) => Math.max(max, id), 0)
+  )
 }
 
 async function uploadFile(firstExposureId, client, s3, bucket, config) {
-  const { defaultRegion, nativeRegions, privateKey, ...signatureInfoPayload } = config
+  const {
+    defaultRegion,
+    nativeRegions,
+    privateKey,
+    ...signatureInfoPayload
+  } = config
   const results = {}
-  const exposures = await getExposures(client, firstExposureId)
+  const exposures = await getExposures(client, firstExposureId, config)
 
   let firstExposureCreatedAt = null
   let lastExposureCreatedAt = null
   let lastExposureId = firstExposureId
 
-  for (const { id, created_at, regions, ...exposure } of exposures) {
+  for (const { id, created_at: createdAt, regions, ...exposure } of exposures) {
     if (id > lastExposureId) {
       lastExposureId = id
     }
 
-    if (firstExposureCreatedAt === null || created_at < firstExposureCreatedAt) {
-      firstExposureCreatedAt = created_at
+    if (firstExposureCreatedAt === null || createdAt < firstExposureCreatedAt) {
+      firstExposureCreatedAt = createdAt
     }
 
-    if (lastExposureCreatedAt === null || created_at > lastExposureCreatedAt) {
-      lastExposureCreatedAt = created_at
+    if (lastExposureCreatedAt === null || createdAt > lastExposureCreatedAt) {
+      lastExposureCreatedAt = createdAt
     }
 
     for (const region of regions) {
-      let resolvedRegion = nativeRegions.includes('*') || nativeRegions.includes(region) ? defaultRegion : region
+      const resolvedRegion =
+        nativeRegions.includes('*') || nativeRegions.includes(region)
+          ? defaultRegion
+          : region
 
       if (results[resolvedRegion] === undefined) {
         results[resolvedRegion] = []
@@ -75,17 +93,32 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
   }
 
   for (const [region, exposures] of Object.entries(results)) {
-    if (await exposureFileExists(client, firstExposureId, lastExposureId, region)) {
-      console.log(`file for ${region} exposures ${firstExposureId} to ${lastExposureId} already exists`)
+    if (
+      await exposureFileExists(client, firstExposureId, lastExposureId, region)
+    ) {
+      console.log(
+        `file for ${region} exposures ${firstExposureId} to ${lastExposureId} already exists`
+      )
     } else {
-      console.log(`generating file for ${region} exposures ${firstExposureId} to ${lastExposureId}`)
+      console.log(
+        `generating file for ${region} exposures ${firstExposureId} to ${lastExposureId}`
+      )
 
       const now = new Date()
       const path = `exposures/${region.toLowerCase()}/${now.getTime()}.zip`
 
       const exportFileObject = {
         ACL: 'private',
-        Body: await createExportFile(privateKey, signatureInfoPayload, exposures, region, 1, 1, firstExposureCreatedAt, lastExposureCreatedAt),
+        Body: await createExportFile(
+          privateKey,
+          signatureInfoPayload,
+          exposures,
+          region,
+          1,
+          1,
+          firstExposureCreatedAt,
+          lastExposureCreatedAt
+        ),
         Bucket: bucket,
         ContentType: 'application/zip',
         Key: path
@@ -103,7 +136,7 @@ async function uploadFile(firstExposureId, client, s3, bucket, config) {
   }
 }
 
-async function getExposures(client, since) {
+async function getExposures(client, since, config) {
   const query = SQL`
     SELECT id, created_at, key_data, rolling_period, rolling_start_number, transmission_risk_level, regions
     FROM exposures
@@ -112,29 +145,100 @@ async function getExposures(client, since) {
   `
 
   const { rows } = await client.query(query)
+  const exposures = []
 
-  return rows
+  for (const row of rows) {
+    const endDate = new Date(
+      (row.rolling_start_number + row.rolling_period) * 1000 * 600 +
+        config.varianceOffsetMins * 1000 * 60
+    )
+
+    if (config.disableValidKeyCheck === false && endDate > new Date()) {
+      console.log(
+        `re-inserting key ${row.id} for future processing as it is still valid until ${endDate}`
+      )
+
+      await client.query(SQL`
+        WITH deleted AS (
+          DELETE FROM exposures
+          WHERE id = ${row.id}
+          RETURNING
+            key_data,
+            rolling_period,
+            rolling_start_number,
+            transmission_risk_level,
+            regions,
+            test_type,
+            origin,
+            days_since_onset
+        )
+        INSERT INTO exposures (
+          key_data,
+            rolling_period,
+            rolling_start_number,
+            transmission_risk_level,
+            regions,
+            test_type,
+            origin,
+            days_since_onset
+        )
+        SELECT
+          key_data,
+          rolling_period,
+          rolling_start_number,
+          transmission_risk_level,
+          regions,
+          test_type,
+          origin,
+          days_since_onset
+        FROM deleted
+      `)
+    } else {
+      exposures.push(row)
+    }
+  }
+
+  return exposures
 }
 
-function createExportFile(privateKey, signatureInfoPayload, exposures, region, batchNum, batchSize, startDate, endDate) {
+function createExportFile(
+  privateKey,
+  signatureInfoPayload,
+  exposures,
+  region,
+  batchNum,
+  batchSize,
+  startDate,
+  endDate
+) {
+  // eslint-disable-next-line no-async-promise-executor
   return new Promise(async resolve => {
     const root = await protobuf.load('exposures.proto')
     const tekExport = root.lookupType('TemporaryExposureKeyExport')
     const signatureList = root.lookupType('TEKSignatureList')
     const sign = crypto.createSign('sha256')
 
-    const keys = exposures.map(({ key_data, rolling_start_number, transmission_risk_level, rolling_period }) => ({
-      keyData: key_data,
-      rollingStartIntervalNumber: rolling_start_number,
-      transmissionRiskLevel: transmission_risk_level,
-      rollingPeriod: rolling_period
-    }))
+    const keys = exposures.map(
+      ({
+        key_data: keyData,
+        rolling_start_number: rollingStartNumber,
+        transmission_risk_level: transmissionRiskLevel,
+        rolling_period: rollingPeriod
+      }) => ({
+        keyData: keyData,
+        rollingStartIntervalNumber: rollingStartNumber,
+        transmissionRiskLevel: transmissionRiskLevel,
+        rollingPeriod: rollingPeriod
+      })
+    )
 
     const filteredKeys = keys.filter(({ keyData }) => {
       const decodedKeyData = Buffer.from(keyData, 'base64')
 
       if (decodedKeyData.length !== 16) {
-        console.log(`excluding invalid key ${keyData}, length was ${decodedKeyData.length}`)
+        console.log(
+          `excluding invalid key ${keyData}, length was ${decodedKeyData.length}`
+        )
 
         return false
       }
@@ -180,7 +284,9 @@ function createExportFile(privateKey, signatureInfoPayload, exposures, region, b
     }
 
     const signatureListMessage = signatureList.create(signatureListPayload)
-    const signatureListEncoded = signatureList.encode(signatureListMessage).finish()
+    const signatureListEncoded = signatureList
+      .encode(signatureListMessage)
+      .finish()
 
     const archive = archiver('zip')
     let output = Buffer.alloc(0)
@@ -199,7 +305,12 @@ function createExportFile(privateKey, signatureInfoPayload, exposures, region, b
   })
 }
 
-async function exposureFileExists(client, firstExposureId, lastExposureId, region) {
+async function exposureFileExists(
+  client,
+  firstExposureId,
+  lastExposureId,
+  region
+) {
   const query = SQL`
     SELECT id FROM exposure_export_files
     WHERE since_exposure_id = ${firstExposureId}
@@ -225,23 +336,24 @@ async function uploadExposuresSince(client, s3, bucket, config, since) {
   await uploadFile(firstExposureId, client, s3, bucket, config)
 }
 
-exports.handler = async function () {
+exports.handler = async function() {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
-  const client = await getDatabase()
   const bucket = await getAssetsBucket()
   const config = await getExposuresConfig()
   const date = new Date()
 
-  await uploadExposuresSince(client, s3, bucket, config, date)
-
-  date.setHours(0, 0, 0, 0)
-
-  for (let i = 0; i < 14; i++) {
+  await withDatabase(async client => {
     await uploadExposuresSince(client, s3, bucket, config, date)
-    date.setDate(date.getDate() - 1)
-  }
 
-  await clearExpiredExposures(client, s3, bucket)
+    date.setHours(0, 0, 0, 0)
+
+    for (let i = 0; i < 14; i++) {
+      await uploadExposuresSince(client, s3, bucket, config, date)
+      date.setDate(date.getDate() - 1)
+    }
+
+    await clearExpiredExposures(client, s3, bucket)
+  })
 
   return true
 }

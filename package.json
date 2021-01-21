@@ -5,14 +5,20 @@
   "description": "Common lambda functions for contact tracing",
   "scripts": {
     "artifact:create": "zip -r lambdas.zip *",
-    "download": "env-cmd -f .env node download.js",
-    "exposures": "env-cmd -f .env node exposures.js",
-    "settings": "env-cmd -f .env node settings.js",
-    "stats": "env-cmd -f .env node stats.js",
-    "token:metrics": "env-cmd -f .env node token.js \"{ \\\"type\\\": \\\"metrics\\\", \\\"description\\\": \\\"Manual token\\\" }\"",
-    "token:push": "env-cmd -f .env node token.js \"{ \\\"type\\\": \\\"push\\\", \\\"description\\\": \\\"Manual token\\\" }\"",
-    "token:register": "env-cmd -f .env node token.js \"{ \\\"type\\\": \\\"register\\\", \\\"description\\\": \\\"Manual token\\\" }\"",
-    "upload": "env-cmd -f .env node upload.js"
+    "create:env": "node -r fs -e \"fs.copyFileSync('.env.sample', '.env', fs.constants.COPYFILE_EXCL)\"",
+    "test:cleanup": "env-cmd -f .env node cleanup.js",
+    "test:exposures": "env-cmd -f .env node exposures.js",
+    "test:settings": "env-cmd -f .env node settings.js",
+    "test:authorizer": "env-cmd -f .env node authorizer.js \"{ \\\"authorizationToken\\\": \\\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InNvbWVfaWQiLCJpYXQiOjE1OTc3MTU0NzF9.fk8-_-XrZulUvphLZuidsPeu4CDbS7jzlk9OZWw4yls\\\" }\"",
+    "test:download": "env-cmd -f .env node download.js",
+    "test:upload": "env-cmd -f .env node upload.js",
+    "test:token:metrics": "env-cmd -f .env node token.js \"{ \\\"type\\\": \\\"metrics\\\", \\\"description\\\": \\\"Manual token\\\" }\"",
+    "test:token:push": "env-cmd -f .env node token.js \"{ \\\"type\\\": \\\"push\\\", \\\"description\\\": \\\"Manual token\\\" }\"",
+    "test:token:register": "env-cmd -f .env node token.js \"{ \\\"type\\\": \\\"register\\\", \\\"description\\\": \\\"Manual token\\\" }\"",
+    "test": "npm-run-all test:*",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:staged": "lint-staged"
   },
   "dependencies": {
     "@nearform/sql": "^1.4.0",
@@ -20,6 +26,7 @@
     "aws-sdk": "^2.646.0",
     "flat": "^5.0.0",
     "jsonwebtoken": "^8.5.1",
+    "jsrsasign": "^9.1.9",
     "node-fetch": "^2.6.0",
     "node-jose": "^1.1.4",
     "pg": "^8.3.0",
@@ -27,7 +34,21 @@
     "protobufjs": "^6.9.0"
   },
   "devDependencies": {
-    "env-cmd": "^10.1.0"
+    "env-cmd": "^10.1.0",
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-config-prettier-standard": "^3.0.1",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "lint-staged": "^8.1.4",
+    "npm-run-all": "^4.1.5",
+    "pino-pretty": "^3.5.0",
+    "prettier": "^1.19.1",
+    "prettier-config-standard": "^1.0.1"
   },
   "lint-staged": {
     "*.js": [
