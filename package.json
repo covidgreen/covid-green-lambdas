@@ -26,6 +26,7 @@
     "aws-sdk": "^2.646.0",
     "axios": "^0.20.0",
     "date-fns": "^2.16.1",
+    "date-fns-tz": "^1.1.1",
     "flat": "^5.0.0",
     "jsonwebtoken": "^8.5.1",
     "jsrsasign": "^9.1.9",
