@@ -1,7 +1,6 @@
 const SQL = require('@nearform/sql')
 const AWS = require('aws-sdk')
-const { da } = require('date-fns/locale')
-const { format, utcToZonedTime } = require('date-fns-tz')
+const { utcToZonedTime } = require('date-fns-tz')
 
 const {
   withDatabase,
