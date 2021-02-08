@@ -39,15 +39,18 @@ async function createRegistrationMetrics(client) {
 async function storeENXLogoRequests(client, metrics) {
   const timeZone = await getTimeZone()
 
+  // include zero metrics also for now
+  const nonZeroMetrics = metrics // .filter(m => m.value > 0)
+
   const sql = SQL`
     INSERT INTO metrics (date, event, os, version, value)
     VALUES `
 
-  metrics.forEach((metric, index) => {
+  nonZeroMetrics.forEach((metric, index) => {
     sql.append(
       SQL`((CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE, ${metric.metric}, '', '', ${metric.value})`
     )
-    if (index < metrics.length - 1) {
+    if (index < nonZeroMetrics.length - 1) {
       sql.append(SQL`,`)
     }
   })
@@ -58,7 +61,9 @@ async function storeENXLogoRequests(client, metrics) {
     WHERE metrics.date = EXCLUDED.date AND metrics.event = EXCLUDED.event
   `)
 
-  await client.query(sql)
+  if (nonZeroMetrics.length > 0) {
+    await client.query(sql)
+  }
 }
 
 function buildMetricsQuery() {
