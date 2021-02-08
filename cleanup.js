@@ -1,8 +1,12 @@
 const SQL = require('@nearform/sql')
+const AWS = require('aws-sdk')
+const { utcToZonedTime } = require('date-fns-tz')
+
 const {
   withDatabase,
   getExpiryConfig,
   getTimeZone,
+  getENXLogoEnabled,
   runIfDev
 } = require('./utils')
 
@@ -31,6 +35,116 @@ async function createRegistrationMetrics(client) {
   const [{ value }] = rows
 
   console.log(`updated register metric for today with value ${value}`)
+}
+
+async function storeENXLogoRequests(client, metrics) {
+  const timeZone = await getTimeZone()
+
+  // include zero metrics also for now
+  const nonZeroMetrics = metrics // .filter(m => m.value > 0)
+
+  const sql = SQL`
+    INSERT INTO metrics (date, event, os, version, value)
+    VALUES `
+
+  nonZeroMetrics.forEach((metric, index) => {
+    sql.append(
+      SQL`((CURRENT_TIMESTAMP AT TIME ZONE ${timeZone})::DATE, ${metric.metric}, '', '', ${metric.value})`
+    )
+    if (index < nonZeroMetrics.length - 1) {
+      sql.append(SQL`,`)
+    }
+  })
+
+  sql.append(SQL`
+    ON CONFLICT ON CONSTRAINT metrics_pkey
+    DO UPDATE SET value = EXCLUDED.value
+    WHERE metrics.date = EXCLUDED.date AND metrics.event = EXCLUDED.event
+  `)
+
+  if (nonZeroMetrics.length > 0) {
+    await client.query(sql)
+  }
+}
+
+function buildMetricsQuery() {
+  const metrics = [
+    { metric: 'enxlogoall', label: 'ENX_LOGO_REQUESTS_ALL' },
+    { metric: 'enxlogo200', label: 'ENX_LOGO_REQUESTS_200' },
+    { metric: 'enxlogo304', label: 'ENX_LOGO_REQUESTS_304' },
+    { metric: 'enxlogosettings', label: 'ENX_LOGO_REQUESTS_SETTINGS' },
+    { metric: 'enxlogoenbuddy', label: 'ENX_LOGO_REQUESTS_ENBUDDY' }
+  ]
+  const metricsData = []
+
+  metrics.forEach(m => {
+    metricsData.push({
+      Id: `en_${m.metric}`,
+      MetricStat: {
+        Metric: {
+          Namespace: 'ApiGateway',
+          MetricName: m.metric
+        },
+        Period: 86400,
+        Stat: 'Sum'
+      },
+      Label: `${m.label}`,
+      ReturnData: true
+    })
+  })
+
+  return metricsData
+}
+
+async function createENXLogoMetrics(client, event) {
+  const timeZone = await getTimeZone()
+  const enxLogoEnabled = await getENXLogoEnabled()
+
+  if (!enxLogoEnabled) {
+    console.log('Skipping enx logo checks, not enabled')
+    return
+  }
+
+  const cw = new AWS.CloudWatch()
+
+  let startDate = new Date()
+  startDate.setHours(0, 0, 0, 0)
+
+  if (event && event.startDate) {
+    startDate = new Date(event.startDate)
+  }
+  const endDate = new Date(startDate)
+  endDate.setHours(0, 0, 0, 0)
+  endDate.setDate(endDate.getDate() + 1)
+
+  const params = {
+    MetricDataQueries: buildMetricsQuery(),
+    StartTime: utcToZonedTime(startDate, timeZone),
+    EndTime: utcToZonedTime(endDate, timeZone)
+  }
+  const logData = await new Promise((resolve, reject) => {
+    cw.getMetricData(params, function(err, data) {
+      if (err) {
+        console.log(err) // an error occurred
+        reject(err)
+      } else {
+        resolve(data)
+      }
+    })
+  })
+
+  const results = logData.MetricDataResults
+  const dbMetrics = []
+
+  results.forEach(response => {
+    dbMetrics.push({
+      metric: response.Label,
+      value:
+        response.Values && response.Values.length > 0 ? response.Values[0] : 0
+    })
+  })
+  await storeENXLogoRequests(client, dbMetrics)
+  console.log('updated enx logo requests metrics', startDate, dbMetrics)
 }
 
 async function removeExpiredCodes(client, codeLifetime) {
@@ -68,7 +182,7 @@ async function removeOldNoticesKeys(client, noticeLifetime) {
   )
 }
 
-exports.handler = async function() {
+exports.handler = async function(event) {
   const {
     codeLifetime,
     tokenLifetime,
@@ -80,6 +194,7 @@ exports.handler = async function() {
     await removeExpiredCodes(client, codeLifetime)
     await removeExpiredTokens(client, tokenLifetime)
     await removeOldNoticesKeys(client, noticeLifetime)
+    await createENXLogoMetrics(client, event)
   })
 
   return true
