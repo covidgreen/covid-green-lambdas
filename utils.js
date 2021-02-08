@@ -16,7 +16,6 @@ async function getParameter(id, defaultValue) {
     const response = await ssm
       .getParameter({ Name: `${process.env.CONFIG_VAR_PREFIX}${id}` })
       .promise()
-
     return response.Parameter.Value
   } catch (err) {
     if (defaultValue !== undefined) {
@@ -232,6 +231,14 @@ async function getTimeZone() {
   }
 }
 
+async function getENXLogoEnabled() {
+  if (isProduction) {
+    return await getParameter('enx_logo_supported', false)
+  } else {
+    return process.env.ENX_LOGO_SUPPORTED
+  }
+}
+
 async function insertMetric(client, event, os, version, value = 1) {
   const timeZone = await getTimeZone()
 
@@ -286,6 +293,7 @@ module.exports = {
   getInteropConfig,
   getJwtSecret,
   getTimeZone,
+  getENXLogoEnabled,
   insertMetric,
   isAuthorized,
   runIfDev
