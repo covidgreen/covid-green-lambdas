@@ -6,6 +6,7 @@ const {
   withDatabase,
   getExpiryConfig,
   getTimeZone,
+  getENXLogoEnabled,
   runIfDev
 } = require('./utils')
 
@@ -97,6 +98,13 @@ function buildMetricsQuery() {
 
 async function createENXLogoMetrics(client, event) {
   const timeZone = await getTimeZone()
+  const enxLogoEnabled = await getENXLogoEnabled()
+
+  if (!enxLogoEnabled) {
+    console.log('Skipping enx logo checks, not enabled')
+    return
+  }
+
   const cw = new AWS.CloudWatch()
 
   let startDate = new Date()
