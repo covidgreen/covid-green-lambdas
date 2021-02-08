@@ -16,7 +16,6 @@ async function getParameter(id, defaultValue) {
     const response = await ssm
       .getParameter({ Name: `${process.env.CONFIG_VAR_PREFIX}${id}` })
       .promise()
-
     return response.Parameter.Value
   } catch (err) {
     if (defaultValue !== undefined) {

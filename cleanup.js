@@ -183,6 +183,7 @@ async function removeOldNoticesKeys(client, noticeLifetime) {
 }
 
 exports.handler = async function(event) {
+
   const {
     codeLifetime,
     tokenLifetime,
