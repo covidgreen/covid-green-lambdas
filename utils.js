@@ -183,6 +183,9 @@ async function getInteropConfig() {
     config.varianceOffsetMins = Number(
       await getParameter('variance_offset_mins', 120)
     )
+    config.allowedTestTypes = JSON.parse(
+      await getParameter('allowed_test_types', '[]')
+    )
     return config
   } else {
     return {
@@ -209,7 +212,8 @@ async function getInteropConfig() {
         }
       ],
       origin: process.env.INTEROP_ORIGIN,
-      varianceOffsetMins: Number(process.env.VARIANCE_OFFSET_MINS)
+      varianceOffsetMins: Number(process.env.VARIANCE_OFFSET_MINS),
+      allowedTestTypes: JSON.parse(process.env.ALLOWED_TEST_TYPES)
     }
   }
 }
