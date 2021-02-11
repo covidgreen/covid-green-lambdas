@@ -12,6 +12,20 @@ const {
   withDatabase
 } = require('./utils')
 
+const reportTypes = {
+  CONFIRMED_TEST: 1,
+  CONFIRMED_CLINICAL_DIAGNOSIS: 2,
+  SELF_REPORT: 3,
+  RECURSIVE: 4,
+  REVOKED: 5
+}
+
+const testTypes = {
+  PCR: 1,
+  LFT: 2,
+  LFT_SELF_ASSISTED: 3
+}
+
 async function createBatch(client, count, lastExposureId, serverId) {
   const query = SQL`
     INSERT INTO upload_batches (exposure_count, last_exposure_id, server_id)
@@ -86,13 +100,17 @@ async function uploadToInterop(client, id, privateKey, token, url) {
             rolling_start_number: rollingStartNumber,
             transmission_risk_level: transmissionRiskLevel,
             rolling_period: rollingPeriod,
-            regions
+            regions,
+            days_since_onset: daysSinceOnset
           }) => ({
             keyData,
             rollingStartNumber,
             transmissionRiskLevel,
             rollingPeriod,
-            regions
+            regions,
+            daysSinceOnset,
+            reportType: reportTypes.CONFIRMED_TEST,
+            testType: testTypes.PCR
           })
         )
 
@@ -231,14 +249,6 @@ async function uploadToEfgs(client, config, interopOrigin, varianceOffsetMins) {
           cert: Buffer.from(auth.cert, 'utf-8'),
           key: Buffer.from(auth.key, 'utf-8')
         })
-
-        const reportTypes = {
-          CONFIRMED_TEST: 1,
-          CONFIRMED_CLINICAL_DIAGNOSIS: 2,
-          SELF_REPORT: 3,
-          RECURSIVE: 4,
-          REVOKED: 5
-        }
 
         const dataToSign = keysToUpload.map(
           ({

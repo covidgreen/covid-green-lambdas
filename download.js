@@ -89,7 +89,15 @@ async function insertExposures(client, exposures) {
   return rowCount
 }
 
-async function downloadFromInterop(client, id, maxAge, token, url, event) {
+async function downloadFromInterop(
+  client,
+  id,
+  maxAge,
+  token,
+  url,
+  event,
+  allowedTestTypes
+) {
   console.log(`beginning download from ${url}`)
 
   let more = true
@@ -127,7 +135,15 @@ async function downloadFromInterop(client, id, maxAge, token, url, event) {
           }
         }
 
-        inserted += await insertExposures(client, data.exposures)
+        // filter keys based on allowed test type criteria and report type
+        const validKeys = data.exposures.filter(
+          exp =>
+            (allowedTestTypes.length === 0 ||
+              allowedTestTypes.indexOf(exp.testType) > -1) &&
+            exp.reportType === 1
+        )
+
+        inserted += await insertExposures(client, validKeys)
       }
 
       await insertBatch(client, batchTag, id)
@@ -263,11 +279,19 @@ async function downloadFromEfgs(client, config, event, interopOrigin) {
 }
 
 exports.handler = async function(event) {
-  const { efgs, servers, origin } = await getInteropConfig()
+  const { efgs, servers, origin, allowedTestTypes } = await getInteropConfig()
 
   await withDatabase(async client => {
     for (const { id, maxAge, token, url } of servers) {
-      await downloadFromInterop(client, id, maxAge, token, url, event)
+      await downloadFromInterop(
+        client,
+        id,
+        maxAge,
+        token,
+        url,
+        event,
+        allowedTestTypes
+      )
     }
 
     if (efgs && efgs.download) {
