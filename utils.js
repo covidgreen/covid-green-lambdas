@@ -184,7 +184,7 @@ async function getInteropConfig() {
       await getParameter('variance_offset_mins', 120)
     )
     config.allowedTestTypes = JSON.parse(
-      await getParameter('allowed_test_types', '[]')
+      await getParameter('allowed_test_types', '[1]')
     )
     return config
   } else {
