@@ -123,7 +123,7 @@ async function downloadFromInterop(
 
     if (response.status === 200) {
       const data = await response.json()
-
+      let actualKeys = 0
       batchTag = data.batchTag
 
       if (data.exposures.length > 0) {
@@ -136,20 +136,23 @@ async function downloadFromInterop(
         }
 
         // filter keys based on allowed test type criteria and report type
-        const validKeys = data.exposures.filter(
-          exp =>
+        const validKeys = data.exposures.filter(exp => {
+          return (
             (allowedTestTypes.length === 0 ||
               allowedTestTypes.indexOf(exp.testType) > -1) &&
             exp.reportType === 1
-        )
-
-        inserted += await insertExposures(client, validKeys)
+          )
+        })
+        if (validKeys.length > 0) {
+          actualKeys = await insertExposures(client, validKeys)
+          inserted += actualKeys
+        }
       }
 
       await insertBatch(client, batchTag, id)
 
       console.log(
-        `added ${data.exposures.length} exposures from batch ${batchTag}`
+        `added ${actualKeys} exposures from potential ${data.exposures.length} exposures from batch ${batchTag}`
       )
     } else if (response.status === 204) {
       await insertMetric(client, 'INTEROP_KEYS_DOWNLOADED', '', '', inserted)
