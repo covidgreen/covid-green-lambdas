@@ -3,7 +3,6 @@ const AWS = require('aws-sdk')
 const { utcToZonedTime } = require('date-fns-tz')
 const fetch = require('node-fetch')
 
-
 const {
   withDatabase,
   getExpiryConfig,
