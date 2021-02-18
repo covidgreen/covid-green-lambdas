@@ -134,27 +134,27 @@ jobs:
     - name: Update authorizer alias
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.NI_QA_KEY }}
-#        AWS_SECRET_ACCESS_KEY: ${{ secrets.NI_QA_SECRET }}
-#        AWS_REGION: eu-west-2
-#      run: ./scripts/update-lambda-alias.sh "qa-ni-authorizer" "-live"
-#
-#    - name: Deploy cleanup
-#      uses: appleboy/lambda-action@master
-#      with:
-#        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
-#        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
-#        aws_region: eu-west-2
-#        function_name: qa-ni-cleanup
-#        zip_file: lambdas.zip
-#
-#    - name: Deploy download
-#      uses: appleboy/lambda-action@master
-#      with:
-#        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
-#        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
-#        aws_region: eu-west-2
-#        function_name: qa-ni-download
-#        zip_file: lambdas.zip
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.NI_QA_SECRET }}
+        AWS_REGION: eu-west-2
+      run: ./scripts/update-lambda-alias.sh "qa-ni-authorizer" "-live"
+
+    - name: Deploy cleanup
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-cleanup
+        zip_file: lambdas.zip
+
+    - name: Deploy download
+      uses: appleboy/lambda-action@master
+      with:
+        aws_access_key_id: ${{ secrets.NI_QA_KEY }}
+        aws_secret_access_key: ${{ secrets.NI_QA_SECRET }}
+        aws_region: eu-west-2
+        function_name: qa-ni-download
+        zip_file: lambdas.zip
 #
 #    - name: Deploy exposures
 #      uses: appleboy/lambda-action@master
