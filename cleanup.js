@@ -1,14 +1,61 @@
 const SQL = require('@nearform/sql')
 const AWS = require('aws-sdk')
 const { utcToZonedTime } = require('date-fns-tz')
+const fetch = require('node-fetch')
 
 const {
   withDatabase,
   getExpiryConfig,
   getTimeZone,
   getENXLogoEnabled,
+  getAPHLServerDetails,
   runIfDev
 } = require('./utils')
+
+async function createAPHLVerificationServerMetrics(client) {
+  const details = await getAPHLServerDetails()
+
+  if (details.server === '') {
+    console.log('No APHL server configured, ignoring stats')
+    return
+  }
+
+  const response = await fetch(`${details.server}/api/stats/realm.json`, {
+    method: 'GET',
+    headers: {
+      'X-API-Key': details.key,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (response.status === 200) {
+    const data = await response.json()
+
+    const runDate = new Date()
+    runDate.setHours(0, 0, 0, 0)
+    runDate.setDate(runDate.getDate() - 1)
+    const dataSet = data.statistics.filter(
+      s => new Date(s.date.substring(0, 10)).getTime() >= runDate.getTime()
+    )
+
+    for (let i = 0; i < dataSet.length; i++) {
+      const metricsDate = dataSet[i].date
+      const metrics = dataSet[i].data
+
+      const sql = SQL`
+      INSERT INTO metrics (date, event, os, version, value)
+      VALUES (${metricsDate}, 'APHL_CODES_ISSUES', '', '', ${metrics.codes_issued}),
+      (${metricsDate}, 'APHL_CODES_CLAIMED', '', '', ${metrics.codes_claimed}),
+      (${metricsDate}, 'APHL_CODES_INVALID', '', '', ${metrics.codes_invalid}),
+      (${metricsDate}, 'APHL_CLAIM_MEAN_AGE_SECONDS', '', '', ${metrics.code_claim_mean_age_seconds})
+      ON CONFLICT ON CONSTRAINT metrics_pkey
+      DO UPDATE SET value = EXCLUDED.value
+      WHERE metrics.date = EXCLUDED.date AND metrics.event = EXCLUDED.event `
+
+      await client.query(sql)
+    }
+  }
+}
 
 async function createRegistrationMetrics(client) {
   const timeZone = await getTimeZone()
@@ -195,6 +242,7 @@ exports.handler = async function(event) {
     await removeExpiredTokens(client, tokenLifetime)
     await removeOldNoticesKeys(client, noticeLifetime)
     await createENXLogoMetrics(client, event)
+    await createAPHLVerificationServerMetrics(client)
   })
 
   return true

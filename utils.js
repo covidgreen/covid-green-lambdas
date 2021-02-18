@@ -244,6 +244,19 @@ async function getENXLogoEnabled() {
   }
 }
 
+async function getAPHLServerDetails() {
+  if (isProduction) {
+    const { statsApiKey } = await getSecret('verify-proxy')
+    const server = await getParameter('issue-proxy', '')
+    return { server, key: statsApiKey }
+  } else {
+    return {
+      server: process.env.APHL_SERVER_ISSUE,
+      key: process.env.APHL_SERVER_STATS_KEY
+    }
+  }
+}
+
 async function insertMetric(client, event, os, version, value = 1) {
   const timeZone = await getTimeZone()
 
@@ -299,6 +312,7 @@ module.exports = {
   getJwtSecret,
   getTimeZone,
   getENXLogoEnabled,
+  getAPHLServerDetails,
   insertMetric,
   isAuthorized,
   runIfDev
