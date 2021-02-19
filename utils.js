@@ -26,12 +26,20 @@ async function getParameter(id, defaultValue) {
   }
 }
 
-async function getSecret(id) {
-  const response = await secretsManager
-    .getSecretValue({ SecretId: `${process.env.CONFIG_VAR_PREFIX}${id}` })
-    .promise()
+async function getSecret(id, defaultValue) {
+  try {
+    const response = await secretsManager
+      .getSecretValue({ SecretId: `${process.env.CONFIG_VAR_PREFIX}${id}` })
+      .promise()
 
-  return JSON.parse(response.SecretString)
+    return JSON.parse(response.SecretString)
+  } catch (err) {
+    if (defaultValue !== undefined) {
+      return defaultValue
+    }
+
+    throw err
+  }
 }
 
 async function getAssetsBucket() {
@@ -182,6 +190,10 @@ async function getInteropConfig() {
     config.varianceOffsetMins = Number(
       await getParameter('variance_offset_mins', 120)
     )
+    config.allowedTestTypes = JSON.parse(
+      await getParameter('allowed_test_types', '[1]')
+    )
+
     return config
   } else {
     return {
@@ -208,7 +220,8 @@ async function getInteropConfig() {
         }
       ],
       origin: process.env.INTEROP_ORIGIN,
-      varianceOffsetMins: Number(process.env.VARIANCE_OFFSET_MINS)
+      varianceOffsetMins: Number(process.env.VARIANCE_OFFSET_MINS),
+      allowedTestTypes: JSON.parse(process.env.ALLOWED_TEST_TYPES)
     }
   }
 }
@@ -236,6 +249,19 @@ async function getENXLogoEnabled() {
     return await getParameter('enx_logo_supported', false)
   } else {
     return process.env.ENX_LOGO_SUPPORTED
+  }
+}
+
+async function getAPHLServerDetails() {
+  if (isProduction) {
+    const { statsApiKey } = await getSecret('verify-proxy', {})
+    const server = await getParameter('issue-proxy', '')
+    return { server, key: statsApiKey }
+  } else {
+    return {
+      server: process.env.APHL_SERVER_ISSUE,
+      key: process.env.APHL_SERVER_STATS_KEY
+    }
   }
 }
 
@@ -294,6 +320,7 @@ module.exports = {
   getJwtSecret,
   getTimeZone,
   getENXLogoEnabled,
+  getAPHLServerDetails,
   insertMetric,
   isAuthorized,
   runIfDev
