@@ -1,0 +1,10 @@
+{
+  "extends": ["prettier-standard"],
+  "plugins": [],
+  "env": {
+    "es6": true
+  },
+  "rules": {
+    "strict": ["error", "safe"]
+  }
+}
