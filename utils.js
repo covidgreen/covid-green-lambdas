@@ -255,7 +255,7 @@ async function getENXLogoEnabled() {
 async function getAPHLServerDetails() {
   if (isProduction) {
     const { statsApiKey } = await getSecret('verify-proxy', {})
-    const server = await getParameter('issue-proxy', '')
+    const server = await getParameter('issue_proxy_url', '')
     return { server, key: statsApiKey }
   } else {
     return {
