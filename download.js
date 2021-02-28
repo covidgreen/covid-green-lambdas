@@ -136,7 +136,7 @@ async function downloadFromInterop(
         }
 
         // filter keys based on allowed test type criteria and report type
-        const validKeys = data.exposures.filter(exp => {
+        const validKeys = data.exposures.filter((exp) => {
           return (
             (allowedTestTypes.length === 0 ||
               allowedTestTypes.indexOf(exp.testType) > -1) &&
@@ -284,7 +284,7 @@ async function downloadFromEfgs(client, config, event, interopOrigin) {
 exports.handler = async function(event) {
   const { efgs, servers, origin, allowedTestTypes } = await getInteropConfig()
 
-  await withDatabase(async client => {
+  await withDatabase(async (client) => {
     for (const { id, maxAge, token, url } of servers) {
       await downloadFromInterop(
         client,

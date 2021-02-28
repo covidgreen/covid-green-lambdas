@@ -35,7 +35,7 @@ async function createAPHLVerificationServerMetrics(client) {
     runDate.setHours(0, 0, 0, 0)
     runDate.setDate(runDate.getDate() - 1)
     const dataSet = data.statistics.filter(
-      s => new Date(s.date.substring(0, 10)).getTime() >= runDate.getTime()
+      (s) => new Date(s.date.substring(0, 10)).getTime() >= runDate.getTime()
     )
 
     for (let i = 0; i < dataSet.length; i++) {
@@ -129,7 +129,7 @@ function buildMetricsQuery() {
   ]
   const metricsData = []
 
-  metrics.forEach(m => {
+  metrics.forEach((m) => {
     metricsData.push({
       Id: `en_${m.metric}`,
       MetricStat: {
@@ -188,7 +188,7 @@ async function createENXLogoMetrics(client, event) {
   const results = logData.MetricDataResults
   const dbMetrics = []
 
-  results.forEach(response => {
+  results.forEach((response) => {
     dbMetrics.push({
       metric: response.Label,
       value:
@@ -241,7 +241,7 @@ exports.handler = async function(event) {
     noticeLifetime
   } = await getExpiryConfig()
 
-  await withDatabase(async client => {
+  await withDatabase(async (client) => {
     await createRegistrationMetrics(client)
     await removeExpiredCodes(client, codeLifetime)
     await removeExpiredTokens(client, tokenLifetime)

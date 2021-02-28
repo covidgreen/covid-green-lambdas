@@ -375,7 +375,7 @@ async function uploadToEfgs(client, config, interopOrigin, varianceOffsetMins) {
 exports.handler = async function() {
   const { efgs, servers, origin, varianceOffsetMins } = await getInteropConfig()
 
-  await withDatabase(async client => {
+  await withDatabase(async (client) => {
     for (const { id, privateKey, token, url } of servers) {
       await uploadToInterop(client, id, privateKey, token, url)
     }
