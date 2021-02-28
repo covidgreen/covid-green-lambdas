@@ -121,7 +121,10 @@ function buildMetricsQuery() {
     { metric: 'enxlogo304', label: 'ENX_LOGO_REQUESTS_304' },
     { metric: 'enxlogosettings', label: 'ENX_LOGO_REQUESTS_SETTINGS' },
     { metric: 'enxlogoenbuddy', label: 'ENX_LOGO_REQUESTS_ENBUDDY' },
-    { metric: 'enxlogohealthenbuddy', label: 'ENX_LOGO_REQUESTS_HEALTHENBUDDY' },
+    {
+      metric: 'enxlogohealthenbuddy',
+      label: 'ENX_LOGO_REQUESTS_HEALTHENBUDDY'
+    },
     { metric: 'enxlogosettigs2', label: 'ENX_LOGO_REQUESTS_SETTINGS2' }
   ]
   const metricsData = []
