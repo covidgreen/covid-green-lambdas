@@ -16,7 +16,7 @@ exports.handler = async function(event) {
 
   const secret = await getJwtSecret()
 
-  return await withDatabase(async client => {
+  return await withDatabase(async (client) => {
     const { rowCount, rows } = await client.query(sql)
 
     if (rowCount === 0) {

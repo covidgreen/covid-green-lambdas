@@ -300,11 +300,11 @@ function isAuthorized(token, secret) {
 function runIfDev(fn) {
   if (!isProduction) {
     fn(JSON.parse(process.argv[2] || '{}'))
-      .then(result => {
+      .then((result) => {
         console.log(result)
         process.exit(0)
       })
-      .catch(error => {
+      .catch((error) => {
         console.log(error)
         process.exit(1)
       })
