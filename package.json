@@ -30,7 +30,7 @@
     "flat": "^5.0.0",
     "jsonwebtoken": "^8.5.1",
     "jsrsasign": "^9.1.9",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "node-jose": "^1.1.4",
     "pg": "^8.3.0",
     "pg-range": "^1.1.0",
