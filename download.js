@@ -281,7 +281,7 @@ async function downloadFromEfgs(client, config, event, interopOrigin) {
   await updateMetrics(client, interopOrigin)
 }
 
-exports.handler = async function(event) {
+exports.handler = async function (event) {
   const { efgs, servers, origin, allowedTestTypes } = await getInteropConfig()
 
   await withDatabase(async (client) => {

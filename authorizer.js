@@ -1,6 +1,6 @@
 const { isAuthorized, runIfDev } = require('./utils')
 
-exports.handler = async function(event) {
+exports.handler = async function (event) {
   const secret = process.env.JWT_SECRET
 
   if (!secret) {

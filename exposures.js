@@ -398,7 +398,7 @@ async function uploadExposuresSince(
   await uploadFile(startId, client, s3, bucket, config, endDate)
 }
 
-exports.handler = async function() {
+exports.handler = async function () {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const bucket = await getAssetsBucket()
   const config = await getExposuresConfig()
