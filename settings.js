@@ -67,7 +67,7 @@ async function updateIfChanged(s3, bucket, key, data) {
   }
 }
 
-exports.handler = async function() {
+exports.handler = async function () {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const bucket = await getAssetsBucket()
 

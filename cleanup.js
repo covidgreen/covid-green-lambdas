@@ -175,7 +175,7 @@ async function createENXLogoMetrics(client, event) {
     EndTime: utcToZonedTime(endDate, timeZone)
   }
   const logData = await new Promise((resolve, reject) => {
-    cw.getMetricData(params, function(err, data) {
+    cw.getMetricData(params, function (err, data) {
       if (err) {
         console.log(err) // an error occurred
         reject(err)
@@ -234,7 +234,7 @@ async function removeOldNoticesKeys(client, noticeLifetime) {
   )
 }
 
-exports.handler = async function(event) {
+exports.handler = async function (event) {
   const {
     codeLifetime,
     tokenLifetime,
