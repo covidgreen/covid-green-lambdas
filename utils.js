@@ -246,9 +246,9 @@ async function getTimeZone() {
 
 async function getENXLogoEnabled() {
   if (isProduction) {
-    return await getParameter('enx_logo_supported', false)
+    return /true/i.test(await getParameter('enx_logo_supported', false))
   } else {
-    return process.env.ENX_LOGO_SUPPORTED
+    return /true/i.test(process.env.ENX_LOGO_SUPPORTED)
   }
 }
 
