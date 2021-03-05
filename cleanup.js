@@ -91,7 +91,7 @@ async function createRegistrationMetrics(client) {
 async function storeENXHourlyData(client, metrics) {
   const dbData = {}
 
-  metrics.forEach(metric => {
+  metrics.forEach((metric) => {
     if (!dbData[metric.date]) {
       dbData[metric.date] = {}
     }
@@ -104,11 +104,11 @@ async function storeENXHourlyData(client, metrics) {
   Object.keys(dbData).forEach((key, index) => {
     const metric = dbData[key]
     sql.append(
-      SQL`(${new Date(key)}, ${metric.ENX_LOGO_REQUESTS_ALL ||
-        0}, ${metric.ENX_LOGO_REQUESTS_200 ||
-        0}, ${metric.ENX_LOGO_REQUESTS_SETTINGS ||
-        0}, ${metric.ENX_LOGO_REQUESTS_ENBUDDY ||
-        0}, ${metric.ENX_LOGO_REQUESTS_HEALTHENBUDDY || 0})`
+      SQL`(${new Date(key)}, ${metric.ENX_LOGO_REQUESTS_ALL || 0}, ${
+        metric.ENX_LOGO_REQUESTS_200 || 0
+      }, ${metric.ENX_LOGO_REQUESTS_SETTINGS || 0}, ${
+        metric.ENX_LOGO_REQUESTS_ENBUDDY || 0
+      }, ${metric.ENX_LOGO_REQUESTS_HEALTHENBUDDY || 0})`
     )
     if (index < Object.keys(dbData).length - 1) {
       sql.append(SQL`,`)
@@ -227,7 +227,7 @@ async function createENXLogoMetrics(client, event, hourlyBreakdown) {
   const dbMetrics = []
 
   if (!hourlyBreakdown) {
-    results.forEach(response => {
+    results.forEach((response) => {
       dbMetrics.push({
         date: endDate,
         metric: response.Label,
@@ -243,7 +243,7 @@ async function createENXLogoMetrics(client, event, hourlyBreakdown) {
     })
     await storeENXLogoRequests(client, dbMetrics)
   } else {
-    results.forEach(response => {
+    results.forEach((response) => {
       response.Timestamps.forEach((t, index) => {
         dbMetrics.push({
           date: utcToZonedTime(t, timeZone),
