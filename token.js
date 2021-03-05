@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken')
 const SQL = require('@nearform/sql')
 const { withDatabase, getJwtSecret, runIfDev } = require('./utils')
 
-exports.handler = async function(event) {
+exports.handler = async function (event) {
   const { description, type } = event
 
   if (!description) {
@@ -16,7 +16,7 @@ exports.handler = async function(event) {
 
   const secret = await getJwtSecret()
 
-  return await withDatabase(async client => {
+  return await withDatabase(async (client) => {
     const { rowCount, rows } = await client.query(sql)
 
     if (rowCount === 0) {
