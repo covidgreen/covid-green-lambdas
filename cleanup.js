@@ -200,7 +200,6 @@ async function createENXLogoMetrics(client, event, hourlyBreakdown) {
   if (event && event.startDate) {
     startDate = new Date(event.startDate)
   }
-  startDate = new Date('2021-02-26')
   startDate.setDate(startDate.getDate() - 1)
 
   const endDate = new Date(startDate)
