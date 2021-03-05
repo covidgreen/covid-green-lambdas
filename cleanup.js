@@ -35,7 +35,7 @@ async function createAPHLVerificationServerMetrics(client) {
     runDate.setHours(0, 0, 0, 0)
     runDate.setDate(runDate.getDate() - 1)
     const dataSet = data.statistics.filter(
-      s => new Date(s.date.substring(0, 10)).getTime() >= runDate.getTime()
+      (s) => new Date(s.date.substring(0, 10)).getTime() >= runDate.getTime()
     )
 
     for (let i = 0; i < dataSet.length; i++) {
@@ -165,7 +165,7 @@ function buildMetricsQuery(period) {
   ]
   const metricsData = []
 
-  metrics.forEach(m => {
+  metrics.forEach((m) => {
     metricsData.push({
       Id: `en_${m.metric}`,
       MetricStat: {
@@ -213,7 +213,7 @@ async function createENXLogoMetrics(client, event, hourlyBreakdown) {
     EndTime: zonedTimeToUtc(endDate, timeZone)
   }
   const logData = await new Promise((resolve, reject) => {
-    cw.getMetricData(params, function(err, data) {
+    cw.getMetricData(params, function (err, data) {
       if (err) {
         console.log(err) // an error occurred
         reject(err)
@@ -300,14 +300,14 @@ async function removeOldNoticesKeys(client, noticeLifetime) {
   )
 }
 
-exports.handler = async function(event) {
+exports.handler = async function (event) {
   const {
     codeLifetime,
     tokenLifetime,
     noticeLifetime
   } = await getExpiryConfig()
 
-  await withDatabase(async client => {
+  await withDatabase(async (client) => {
     await createRegistrationMetrics(client)
     await removeExpiredCodes(client, codeLifetime)
     await removeExpiredTokens(client, tokenLifetime)

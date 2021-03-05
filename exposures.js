@@ -240,7 +240,7 @@ function createExportFile(
   endDate
 ) {
   // eslint-disable-next-line no-async-promise-executor
-  return new Promise(async resolve => {
+  return new Promise(async (resolve) => {
     const root = await protobuf.load('exposures.proto')
     const tekExport = root.lookupType('TemporaryExposureKeyExport')
     const signatureList = root.lookupType('TEKSignatureList')
@@ -329,7 +329,7 @@ function createExportFile(
     const archive = archiver('zip')
     let output = Buffer.alloc(0)
 
-    archive.on('data', data => {
+    archive.on('data', (data) => {
       output = Buffer.concat([output, data])
     })
 
@@ -398,7 +398,7 @@ async function uploadExposuresSince(
   await uploadFile(startId, client, s3, bucket, config, endDate)
 }
 
-exports.handler = async function() {
+exports.handler = async function () {
   const s3 = new AWS.S3({ region: process.env.AWS_REGION })
   const bucket = await getAssetsBucket()
   const config = await getExposuresConfig()
@@ -409,7 +409,7 @@ exports.handler = async function() {
   const endDate = new Date(startDate)
   endDate.setDate(endDate.getDate() + 1)
 
-  await withDatabase(async client => {
+  await withDatabase(async (client) => {
     await clearExpiredExposures(client, s3, bucket)
 
     console.log('Creating latest export file for ', new Date())
