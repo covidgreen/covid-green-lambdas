@@ -252,6 +252,14 @@ async function getENXLogoEnabled() {
   }
 }
 
+async function getCheckinSummaryEnabled() {
+  if (isProduction) {
+    return /true/i.test(await getParameter('checkin_summary_enabled', false))
+  } else {
+    return /true/i.test(process.env.CHECK_IN_SUMMARY_ENABLED)
+  }
+}
+
 async function getAPHLServerDetails() {
   if (isProduction) {
     const { statsApiKey } = await getSecret('verify-proxy', {})
@@ -321,6 +329,7 @@ module.exports = {
   getTimeZone,
   getENXLogoEnabled,
   getAPHLServerDetails,
+  getCheckinSummaryEnabled,
   insertMetric,
   isAuthorized,
   runIfDev

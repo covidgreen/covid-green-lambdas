@@ -9,8 +9,33 @@ const {
   getTimeZone,
   getENXLogoEnabled,
   getAPHLServerDetails,
+  getCheckinSummaryEnabled,
   runIfDev
 } = require('./utils')
+
+async function summariseCheckins(client) {
+  const enabled = await getCheckinSummaryEnabled()
+
+  if (!enabled) {
+    console.log('Checkin summay not enabled')
+    return
+  }
+  const timeZone = await getTimeZone()
+
+  const query = SQL`INSERT INTO checkin_summary (event_date, age, sex, county, town, checkins) 
+                    SELECT created_at, coalesce(age_range, 'u') as age, coalesce(sex, 'u') as sex, coalesce(trim(split_part(locality, ',', 1)), 'u') as county
+                          , coalesce(trim(split_part(locality, ',', 2)), 'u') as town, COUNT(*) as checkins FROM check_ins 
+                    WHERE created_at >= (now() AT TIME ZONE ${timeZone})::DATE - 1
+                    GROUP BY created_at, age, sex, county, town
+                    ON CONFLICT ON CONSTRAINT checkin_summary_pkey
+                    DO UPDATE SET checkins = EXCLUDED.checkins
+                    WHERE checkin_summary.event_date = EXCLUDED.event_date AND checkin_summary.age = EXCLUDED.age AND checkin_summary.sex = EXCLUDED.sex 
+                    AND checkin_summary.county = EXCLUDED.county AND checkin_summary.town = EXCLUDED.town`
+
+  // UPSERT into summary table
+  const { rows } = await client.query(query)
+  console.log('Summary checkin counts created', rows.length)
+}
 
 async function createAPHLVerificationServerMetrics(client) {
   const details = await getAPHLServerDetails()
@@ -314,6 +339,7 @@ exports.handler = async function (event) {
     await createENXLogoMetrics(client, event, false)
     await createENXLogoMetrics(client, event, true)
     await createAPHLVerificationServerMetrics(client)
+    await summariseCheckins(client)
   })
 
   return true
