@@ -39,10 +39,11 @@ There are a number of handy commands you can run to help with development.
 * @jackmurdoch - Jack Murdoch <jack.murdoch@nearform.com>
 
 ### Contributors
-
-* @dennisgove - Dennis Gove <dpgove@gmail.com>
+* @fiacc - Fiac O'Brien Moran <fiacc.obrienmoran@nearform.com>
 
 ### Past Contributors
+* @dennisgove - Dennis Gove <dgove1@bloomberg.net>
+* @dharding - David J Harding <davidjasonharding@gmail.com>
 
 ## Hosted By
 
